@@ -22,7 +22,7 @@ char stuDir[BUFLEN];
 char ansDir[BUFLEN];
 char errorDir[BUFLEN];
 char threadFiles[ARGNUM][FILELEN];
-char cIDs[ARGNUM][FILELEN];
+char IDS[ARGNUM][FILELEN];
 
 int mOption = false;
 int eOption = false;
@@ -50,7 +50,7 @@ void ssu_score(int argc, char *argv[])
 		exit(1);
 
 	if(!eOption && !tOption && !mOption && iOption){
-		do_iOption(cIDs);
+		do_iOption(IDS);
 		return;
 	}
 
@@ -78,9 +78,9 @@ void ssu_score(int argc, char *argv[])
 		do_mOption();
 
 	printf("grading student's test papers..\n"); 
-	//score_students(); // 학생 답안 채점
+	score_students(); // 학생 답안 채점
 	if(iOption)
-		do_iOption(cIDs);
+		do_iOption(IDS);
 
 	return;
 }
@@ -135,7 +135,7 @@ int check_option(int argc, char *argv[])
 					if(j >= ARGNUM)
 						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
 					else
-						strcpy(cIDs[j], argv[i]);
+						strcpy(IDS[j], argv[i]);
 					i++; 
 					j++;
 				}
@@ -365,7 +365,6 @@ void make_scoreTable(char *ansDir)
 	while((dirp = readdir(dp)) != NULL)
 	{
 		sprintf(tmp, "%s/%s", ansDir, dirp->d_name);
-		printf("%s\n", tmp);
 		if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, "..")) // 현재, 상위 디렉토리 파일 접근 생략
 			continue;
 
@@ -663,7 +662,8 @@ int score_blank(char *id, char *filename) // 빈칸 문제 채점
 
 	memcpy(qname, filename, strlen(filename) - strlen(strrchr(filename, '.')));
 
-	sprintf(tmp, "%s/%s/%s", stuDir, id, filename);
+	// 학생 빈칸 문제 답안
+	sprintf(tmp, "%s/%s/%s", stuDir, id, filename); // STD_DIR/2020XXXX/X-X.txt
 	fd_std = open(tmp, O_RDONLY);
 	strcpy(s_answer, get_answer(fd_std, s_answer));
 
@@ -692,7 +692,8 @@ int score_blank(char *id, char *filename) // 빈칸 문제 채점
 	idx = 0;
 	std_root = make_tree(std_root, tokens, &idx, 0);
 
-	sprintf(tmp, "%s/%s/%s", ansDir, qname, filename);
+	// 정답 빈칸 문제
+	sprintf(tmp, "%s/%s", ansDir, filename); // ANS_DIR/X-X.txt 
 	fd_ans = open(tmp, O_RDONLY);
 
 	while(1)
