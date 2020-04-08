@@ -1,0 +1,1 @@
+glo_val < VALUE_STOP1 || glo_val > VALUE_STOP2:glo_val < 3 || glo_val > 6

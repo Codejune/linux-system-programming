@@ -1,0 +1,1 @@
+(clocktick = sysconf(_SC_CLK_TCK)) > 0

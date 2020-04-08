@@ -1,0 +1,1 @@
+pthread_create(&tid2, NULL, ssu_thread2, NULL) != 0

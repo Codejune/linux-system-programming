@@ -1,0 +1,1 @@
+open(fname, O_RDONLY, S_IWUSR | S_IRUSR | S_IROTH)

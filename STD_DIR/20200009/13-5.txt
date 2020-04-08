@@ -1,0 +1,1 @@
+tms_end->tms_cstime – tms_start->tms_cstime

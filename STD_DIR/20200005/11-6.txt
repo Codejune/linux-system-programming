@@ -1,0 +1,1 @@
+setvbuf(fp, buf, mode, 0)

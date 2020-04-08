@@ -1,0 +1,1 @@
+pthread_cond_wait(cond, lock)
