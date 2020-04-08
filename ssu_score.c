@@ -1065,9 +1065,9 @@ void print_usage()
 {
 	printf("Usage : ssu_score <STUDENTDIR> <TRUEDIR> [OPTION]\n");
 	printf("Option : \n");
+	printf(" -m                modify question's score\n");
 	printf(" -e <DIRNAME>      print error on 'DIRNAME/ID/qname_error.txt' file \n");
 	printf(" -t <QNAMES>       compile QNAME.C with -lpthread option\n");
+	printf(" -i <IDS>          print ID's wrong questions\n");
 	printf(" -h                print usage\n");
-	printf(" -p                print student's score and total average\n");
-	printf(" -c <IDS>          print ID's score\n");
 }
