@@ -77,4 +77,8 @@ void sort_idTable(int size);
 void sort_scoreTable(int size);
 void get_qname_number(char *qname, int *num1, int *num2);
 
+void do_mOption();
+int rescore(int line, double new_score);
+void file_remove(const char *file, _Bool isDir);
+void file_copy(const char *from, const char *to);
 #endif

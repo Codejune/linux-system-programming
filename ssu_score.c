@@ -17,6 +17,7 @@ extern char id_table[SNUM][10];
 struct ssu_scoreTable score_table[QNUM];
 char id_table[SNUM][10];
 
+char saved_path[BUFLEN] = { 0 };
 char stuDir[BUFLEN];
 char ansDir[BUFLEN];
 char errorDir[BUFLEN];
@@ -31,7 +32,6 @@ int hOption = false;
 
 void ssu_score(int argc, char *argv[])
 {
-	char saved_path[BUFLEN] = { 0 };
 	int i;
 
 	for(i = 0; i < argc; i++){ // -h 옵션일 경우 도움말만 출력하고 프로그램 종료
@@ -74,8 +74,11 @@ void ssu_score(int argc, char *argv[])
 	set_scoreTable(ansDir); // score_table.csv 생성
 	set_idTable(stuDir); // 학생 테이블 생성
 
+	if(mOption)
+		do_mOption();
+
 	printf("grading student's test papers..\n"); 
-	score_students(); // 학생 답안 채점
+	//score_students(); // 학생 답안 채점
 	if(iOption)
 		do_iOption(cIDs);
 
@@ -146,6 +149,113 @@ int check_option(int argc, char *argv[])
 	return true;
 }
 
+void do_mOption( ) 
+{
+	FILE *fp;
+	char input[BUFLEN];
+	char qname[BUFLEN];
+	double score;
+	char *q;
+	int line;
+	int isEOF = 0;
+
+	chdir(ansDir);
+
+	while(1) {
+
+		if((fp = fopen("score_table.csv", "r")) == NULL) {
+			fprintf(stderr, "file open error for score_table.csv\n");
+			return;
+		}
+		memset(input, 0, strlen(input));
+		printf("Input question's number to modify >> ");
+		scanf("%s", input);
+		getchar();
+		line = 0;
+		while((isEOF = fscanf(fp, "%[^,],%lf\n", qname, &score)) != EOF)
+		{
+			q = strtok(qname, ".");
+			if(strcmp(q, input) == 0) {
+				printf("Current score : %g\n", score);
+				printf("New score : ");
+				scanf("%lf", &score);
+				if(rescore(line, score)) {
+					fprintf(stderr, "Rewrite error for score_table.csv\n");
+					return;
+				}
+				isEOF = 0;
+				break;
+			}	
+			line++;	
+			memset(qname, 0 , strlen(qname));
+		}
+		if(strcmp(input, "no") == 0)
+			break;
+		if(isEOF == EOF)
+			printf("Unknown question's number\n");
+		fseek(fp, 0, SEEK_SET);
+	}
+	fclose(fp);
+	chdir(saved_path);
+}
+
+int rescore(int line, double new_score) {
+	FILE *origin;
+	FILE *new;
+	int line_cnt = 0;
+	char qname[BUFLEN] = { 0 };
+	char tmp[BUFLEN] = { 0 };
+	char table_path[BUFLEN] = { 0 };
+	char temp_path[BUFLEN] = { 0 };
+	double origin_score;
+	
+	if((origin = fopen("score_table.csv", "r")) == NULL) {
+		fprintf(stderr, "file open error for score_table.csv\n");
+		return 1;
+	}
+
+	if((new = fopen("temp.csv", "w+")) == NULL) {
+		fprintf(stderr, "file open error for temp.csv\n");
+		return 1;
+	}
+	
+	while(fscanf(origin, "%[^,],%lf\n", qname, &origin_score) != EOF) {
+		if(line_cnt == line) {
+			sprintf(tmp, "%s,%.2f\n", qname, new_score);
+			fwrite(tmp, strlen(tmp), 1, new);
+		} else {
+			sprintf(tmp, "%s,%.2f\n", qname, origin_score);
+			fwrite(tmp, strlen(tmp), 1, new);
+		}
+		line_cnt++;
+		memset(tmp, 0, strlen(tmp));
+	}
+	fclose(origin);
+	fclose(new);
+	sprintf(table_path, "%s/%s", ansDir, "score_table.csv");
+	sprintf(temp_path, "%s/%s", ansDir, "temp.csv");
+	file_remove(table_path, 0);
+	file_copy(temp_path, table_path);
+	file_remove(temp_path, 0);
+	return 0;
+}
+
+void file_remove(const char *file, _Bool isDir) 
+{
+	char remove[BUFLEN] = { 0 };
+	if(isDir)
+		sprintf(remove, "rm - r %s", file);
+	else
+		sprintf(remove, "rm %s", file);
+	system(remove);
+}
+
+void file_copy(const char *from, const char *to) 
+{
+	char copy[BUFLEN] = { 0 };
+	sprintf(copy, "cp %s %s", from, to);
+	system(copy);
+}
 
 void do_iOption(char (*ids)[FILELEN]) // score.csv 에서 학생들의 틀린 문제 출력
 {
@@ -160,7 +270,6 @@ void do_iOption(char (*ids)[FILELEN]) // score.csv 에서 학생들의 틀린 �
 	}
 
 	fscanf(fp, "%s\n", tmp);
-	printf("%s\n", tmp);
 	while(fscanf(fp, "%s\n", tmp) != EOF)
 	{
 		p = strtok(tmp, ",");
