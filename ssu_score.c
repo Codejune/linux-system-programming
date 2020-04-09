@@ -90,7 +90,7 @@ int check_option(int argc, char *argv[])
 	int i, j;
 	int c;
 
-	while((c = getopt(argc, argv, "e:i:thm")) != -1)
+	while((c = getopt(argc, argv, "e:ithm")) != -1)
 	{
 		switch(c){
 			case 'e':
@@ -134,8 +134,9 @@ int check_option(int argc, char *argv[])
 
 					if(j >= ARGNUM)
 						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
-					else
+					else {
 						strcpy(IDS[j], argv[i]);
+					}
 					i++; 
 					j++;
 				}
@@ -259,32 +260,66 @@ void file_copy(const char *from, const char *to)
 
 void do_iOption(char (*ids)[FILELEN]) // score.csv 에서 학생들의 틀린 문제 출력
 {
-	FILE *fp;
-	char tmp[BUFLEN];
 	int i = 0;
-	char *p, *saved;
+	FILE *fp;
+	char temp[BUFLEN] = { 0 };
+	char line[BUFLEN] = { 0 };
+	char header[BUFLEN] = { 0 };
+	int comma_cnt = 0;
+	char *next;
 
 	if((fp = fopen("score.csv", "r")) == NULL){
 		fprintf(stderr, "file open error for score.csv\n");
 		return;
 	}
-
-	fscanf(fp, "%s\n", tmp);
-	while(fscanf(fp, "%s\n", tmp) != EOF)
+	
+	fscanf(fp, "%s", header); // 제목 줄
+	while(fscanf(fp, "%s\n", line) != EOF)
 	{
-		p = strtok(tmp, ",");
-
-		if(!is_exist(ids, tmp))
+		char sid[BUFLEN] = { 0 };
+		char *p;
+		strncpy(sid, line, strlen(header));
+		p = strtok_r(sid, ",", &next);
+		
+		if(!is_exist(ids, sid)) // 제목 행 생략
 			continue;
 
-		printf("%s's wrong answer :\n", tmp);
-
-		while((p = strtok(NULL, ",")) != NULL)
-			saved = p;
-
-		printf("%s\n", saved);
+		printf("%s's wrong answer :\n", p);
+		while((p = strtok_r(NULL, ",", &next)) != NULL) {
+			comma_cnt++;
+			if(strcmp(p, "0") == 0) 
+				printf("%s ", get_header_char(header, get_header_idx(header, comma_cnt)));
+		}
+		printf("\n");
+		comma_cnt = 0;
+		memset(line, 0, strlen(line));
 	}
 	fclose(fp);
+}
+
+int get_header_idx(char *header, int comma_cnt) 
+{
+	int i;
+	int count = 0;
+	int idx;
+	for(int i = 0; i < strlen(header); i++) {
+		if(header[i] == ',') 
+			count++;
+		if(count == comma_cnt) {
+			idx = i + 1;
+			break;
+		}
+	}
+	return idx;
+}
+
+char* get_header_char(char *header, int idx) 
+{
+	char *temp = (char *)calloc(BUFLEN, sizeof(char));
+	int i = 0;
+	while(header[idx] != ',')
+		temp[i++] = header[idx++];
+	return temp;
 }
 
 int is_exist(char (*src)[FILELEN], char *target)
@@ -574,7 +609,7 @@ double score_student(int fd, char *id) // 학생의 점수 계산
 			break;
 
 		sprintf(tmp, "%s/%s/%s", stuDir, id, score_table[i].qname); // STD_DIR/2020XXXX/X-X.txt | STD_DIR/2020XXXX/X.c
-
+		
 		if(access(tmp, F_OK) < 0) // 학생 답안 파일 정보 가져오기
 			result = false;
 		else
@@ -760,7 +795,6 @@ double score_program(char *id, char *filename)
 {
 	double compile;
 	int result;
-
 	compile = compile_program(id, filename);
 
 	if(compile == ERROR || compile == false)
@@ -798,7 +832,6 @@ double compile_program(char *id, char *filename) // 프로그램 문제 컴파�
 	int isthread;
 	off_t size;
 	double result;
-
 	memcpy(qname, filename, strlen(filename) - strlen(strrchr(filename, '.'))); // qname = X
 	
 	isthread = is_thread(qname);
@@ -806,7 +839,6 @@ double compile_program(char *id, char *filename) // 프로그램 문제 컴파�
 	// 정답 프로그램 컴파일
 	sprintf(tmp_f, "%s/%s", ansDir, filename); // ANS_DIR/X.c
 	sprintf(tmp_e, "%s/%s.exe", ansDir, qname); // ANS_DIR/X.exe
-
 	if(tOption && isthread)
 		sprintf(command, "gcc -o %s %s -lpthread", tmp_e, tmp_f);
 	else
@@ -814,7 +846,7 @@ double compile_program(char *id, char *filename) // 프로그램 문제 컴파�
 
 	sprintf(tmp_e, "%s/%s_error.txt", ansDir, qname);
 	fd = creat(tmp_e, 0666);
-
+	
 	redirection(command, fd, STDERR);
 	size = lseek(fd, 0, SEEK_END);
 	close(fd);

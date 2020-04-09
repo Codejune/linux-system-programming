@@ -58,7 +58,10 @@ double check_error_warning(char *filename);
 int compare_resultfile(char *file1, char *file2);
 
 void do_iOption(char (*ids)[FILELEN]);
+int get_header_idx(char *header, int comma_cnt);
+char *get_header_char(char *header, int idx);
 int is_exist(char (*src)[FILELEN], char *target);
+
 
 int is_thread(char *qname);
 void redirection(char *command, int newfd, int oldfd);
