@@ -74,8 +74,10 @@ void ssu_score(int argc, char *argv[])
 	set_scoreTable(ansDir); // score_table.csv 생성
 	set_idTable(stuDir); // 학생 테이블 생성
 
-	if(mOption)
+	if(mOption) {
 		do_mOption();
+		set_scoreTable(ansDir);
+	}
 
 	printf("grading student's test papers..\n"); 
 	score_students(); // 학생 답안 채점
