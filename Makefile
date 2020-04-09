@@ -13,7 +13,7 @@ blank.o : blank.c blank.h
 clean :
 	rm *.o
 	rm ssu_score
-	rm $(PWD)/ANS_DIR/*.csv
+	rm $(PWD)/score_table.csv
 	rm $(PWD)/ANS_DIR/*.exe
 	rm $(PWD)/ANS_DIR/*.stdout
 	rm $(PWD)/*.txt

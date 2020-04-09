@@ -158,7 +158,6 @@ void do_mOption( ) // -m 옵션
 	int line; // score_table.csv에서 수정할 문제의 라인 인덱스
 	int isEOF = 0; // 탐색 실패 확인 변수
 
-	chdir(ansDir); // $(PWD)/ANS_DIR
 
 	while(1) {
 
@@ -195,7 +194,6 @@ void do_mOption( ) // -m 옵션
 		fseek(fp, 0, SEEK_SET); // 새로운 문제 점수 수정을 위해파일의 시작위치로 오프셋 이동
 	}
 	fclose(fp);
-	chdir(saved_path); // $(PWD)
 }
 
 int rescore(int line, double new_score) { // 수정 할 점수로 score_table.csv를 다시 작성 (성공:0 실패:1)
@@ -231,8 +229,8 @@ int rescore(int line, double new_score) { // 수정 할 점수로 score_table.cs
 	}
 	fclose(origin);
 	fclose(new);
-	sprintf(table_path, "%s/%s", ansDir, "score_table.csv");
-	sprintf(temp_path, "%s/%s", ansDir, "temp.csv");
+	sprintf(table_path, "%s", "score_table.csv");
+	sprintf(temp_path, "%s", "temp.csv");
 	file_remove(table_path, 0); // rm score_table.csv
 	file_copy(temp_path, table_path); // cp temp.csv score_table.csv
 	file_remove(temp_path, 0); // rm temp.csv
@@ -345,7 +343,7 @@ void set_scoreTable(char *ansDir) // score_table.csv 설정
 {
 	char filename[FILELEN]; // $(PWD)/ANS_DIR/score_table.csv
 
-	sprintf(filename, "%s/%s", ansDir, "score_table.csv");
+	sprintf(filename, "%s", "score_table.csv");
 
 	if(access(filename, F_OK) == 0) // score_table.csv 파일이 존재 할 경우
 		read_scoreTable(filename); 
@@ -362,7 +360,7 @@ void read_scoreTable(char *path) // score_table.csv 파일 읽기 및 구조체 
 	char score[BUFLEN];
 	int idx = 0;
 
-	if((fp = fopen(path, "r")) == NULL){ // $(PWD)/ANS_DIR/score_table.csv를 읽기 전용으로 열기
+	if((fp = fopen(path, "r")) == NULL){ // $(PWD)/score_table.csv를 읽기 전용으로 열기
 		fprintf(stderr, "file open error for %s\n", path);
 		return ;
 	}
@@ -443,7 +441,7 @@ void write_scoreTable(char *filename) // score_table.csv 데이터 작성
 	int i;
 	int num = sizeof(score_table) / sizeof(score_table[0]); // score_table 구조체의 항목 개수
 
-	if((fd = creat(filename, 0666)) < 0){ // $ANS_DIR/score_table.csv, 0666 생성
+	if((fd = creat(filename, 0666)) < 0){ // $(PWD)/score_table.csv, 0666 생성
 		fprintf(stderr, "creat error for %s\n", filename);
 		return;
 	}
