@@ -1,0 +1,12 @@
+/home/codejune/ssu_2020/STD_DIR/20200005/23.c: In function ‘main’:
+/home/codejune/ssu_2020/STD_DIR/20200005/23.c:18:12: warning: implicit declaration of function ‘open’; did you mean ‘popen’? [-Wimplicit-function-declaration]
+  if((fd1 = open(fname_in, O_RDWR)) < 0){
+            ^~~~
+            popen
+/home/codejune/ssu_2020/STD_DIR/20200005/23.c:18:27: error: ‘O_RDWR’ undeclared (first use in this function)
+  if((fd1 = open(fname_in, O_RDWR)) < 0){
+                           ^~~~~~
+/home/codejune/ssu_2020/STD_DIR/20200005/23.c:18:27: note: each undeclared identifier is reported only once for each function it appears in
+/home/codejune/ssu_2020/STD_DIR/20200005/23.c:33:37: error: ‘O_CREAT’ undeclared (first use in this function)
+  if((fd2 = open(fname_out, O_RDWR | O_CREAT, 0664)) < 0){
+                                     ^~~~~~~

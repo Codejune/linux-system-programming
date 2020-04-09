@@ -1,0 +1,3 @@
+/tmp/ccNqzOq8.o: In function `main':
+28.c:(.text+0x8c): undefined reference to `ssu_func'
+collect2: error: ld returned 1 exit status

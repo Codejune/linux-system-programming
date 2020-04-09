@@ -261,6 +261,7 @@ void do_iOption(char (*ids)[FILELEN]) // -i 옵션
 	FILE *fp; // score.csv 파일 구조체
 	char line[BUFLEN] = { 0 }; // 점수 테이블 라인을 받을 버퍼
 	char header[BUFLEN] = { 0 }; // 점수 테이블 제목을 받을 버퍼
+	char error_line[BUFLEN] = { 0 }; // 에러 발생 문제 목록
 	int comma_cnt = 0; // 쉼표 개수
 	char *tmp;
 
@@ -286,12 +287,15 @@ void do_iOption(char (*ids)[FILELEN]) // -i 옵션
 				tmp = get_header_char(header, get_header_idx(header, comma_cnt)); // 쉼표 개수 기준 문제 파일명 파싱
 				if(strstr(tmp, "sum") != NULL) // 만약 파일 명이 sum일 경우
 					break;
-				printf("%s ", tmp); // 출력
+				strcat(error_line, tmp);
+				strcat(error_line, ", ");
 			}
 		}
-		printf("\n");
+		int len = strlen(error_line) - 2;
+		printf("%.*s\n", len, error_line);
 		comma_cnt = 0;
 		memset(line, 0, strlen(line));
+		memset(error_line, 0 , strlen(error_line));
 	}
 	fclose(fp);
 }
@@ -622,7 +626,7 @@ double score_student(int fd, char *id) // 학생들의 답안 채점
 			write(fd, "0,", 2); 
 		else{
 			if(result == true){ // 채점 결과가 맞았을 경우
-				score += score_table[i].score; 
+				score += score_table[i].score; // 총점에 추가
 				sprintf(tmp, "%.2f,", score_table[i].score); 
 			}
 			else if(result < 0){
@@ -680,7 +684,7 @@ char *get_answer(int fd, char *result) // X-X.txt에서 작성한 답안 반환
 
 int score_blank(char *id, char *filename) // 빈칸 문제 채점
 {
-	char tokens[TOKEN_CNT][MINLEN];
+	char tokens[TOKEN_CNT][MINLEN]; // 
 	node *std_root = NULL, *ans_root = NULL;
 	int idx, start;
 	char tmp[BUFLEN];
@@ -729,7 +733,7 @@ int score_blank(char *id, char *filename) // 빈칸 문제 채점
 	while(1)
 	{
 		ans_root = NULL; // ANS_DIR/X-X.txt의 토큰트리의 루트 노드
-		result = true;
+		result = true; // 
 
 		for(idx = 0; idx < TOKEN_CNT; idx++)
 			memset(tokens[idx], 0, sizeof(tokens[idx]));
@@ -792,7 +796,7 @@ double score_program(char *id, char *filename)
 	int result;
 	compile = compile_program(id, filename);
 
-	if(compile == ERROR || compile == false)
+	if(compile == ERROR || compile == false) // ERROR:0, flase:0
 		return false;
 	
 	result = execute_program(id, filename);
@@ -944,8 +948,8 @@ int execute_program(char *id, char *filename)
 	while((pid = inBackground(tmp)) > 0){
 		end = time(NULL);
 
-		if(difftime(end, start) > OVER){
-			kill(pid, SIGKILL);
+		if(difftime(end, start) > OVER){ // OVER:5, 실행 시간 초과
+			kill(pid, SIGKILL); // 프로세스 제거
 			close(fd);
 			return false;
 		}
