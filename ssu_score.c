@@ -114,7 +114,7 @@ int check_option(int argc, char *argv[]) // 옵션 인자 검사
 				while(i < argc && argv[i][0] != '-') { // -가 붙은 인자가 나오기 전까지 반복
 
 					if(j >= ARGNUM) // ARGNUM : 5, 개수 초과
-						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
+						printf("Maximum Number of Argument Exceeded. :: %s\n", argv[i]);
 					else // -lpthread로 돌릴 문제들을 등록
 						strcpy(threadFiles[j], argv[i]);
 					i++; 
@@ -132,7 +132,7 @@ int check_option(int argc, char *argv[]) // 옵션 인자 검사
 				while(i < argc && argv[i][0] != '-'){ // -가 붙은 인자가 나오기 전까지 반복
 
 					if(j >= ARGNUM) // ARGNUM : 5, 개수 초과
-						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
+						printf("Maximum Number of Argument Exceeded. :: %s\n", argv[i]);
 					else { // 틀린 문제 목록을 볼 학번을 등록
 						strcpy(IDS[j], argv[i]);
 					}
@@ -546,7 +546,7 @@ int get_create_type() // score_table.csv 데이터 할당 방법 선택
 
 	while(1)
 	{
-		printf("score_table.csv file doesn't exist in TREUDIR!\n");
+		printf("score_table.csv file doesn't exist!\n");
 		printf("1. input blank question and program question's score. ex) 0.5 1\n");
 		printf("2. input all question's score. ex) Input value of 1-1: 0.1\n");
 		printf("select type >> ");
