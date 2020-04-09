@@ -1,6 +1,0 @@
-/home/codejune/ssu_2020/STD_DIR/20200004/27.c: In function ‘main’:
-/home/codejune/ssu_2020/STD_DIR/20200004/27.c:14:26: error: ‘ssu_signal_handler’ undeclared (first use in this function); did you mean ‘sa_handler’?
-     sig_act.sa_handler = ssu_signal_handler;
-                          ^~~~~~~~~~~~~~~~~~
-                          sa_handler
-/home/codejune/ssu_2020/STD_DIR/20200004/27.c:14:26: note: each undeclared identifier is reported only once for each function it appears in
