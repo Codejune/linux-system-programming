@@ -1,9 +1,0 @@
-/home/codejune/ssu_2020/STD_DIR/20200001/20.c: In function ‘main’:
-/home/codejune/ssu_2020/STD_DIR/20200001/20.c:17:15: warning: implicit declaration of function ‘open’; did you mean ‘popen’? [-Wimplicit-function-declaration]
-     if ((fd = open(fname, O_RDONLY)) < 0) {   
-               ^~~~
-               popen
-/home/codejune/ssu_2020/STD_DIR/20200001/20.c:17:27: error: ‘O_RDONLY’ undeclared (first use in this function)
-     if ((fd = open(fname, O_RDONLY)) < 0) {   
-                           ^~~~~~~~
-/home/codejune/ssu_2020/STD_DIR/20200001/20.c:17:27: note: each undeclared identifier is reported only once for each function it appears in
