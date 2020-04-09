@@ -1,0 +1,5 @@
+/home/codejune/ssu_2020/STD_DIR/20200009/25.c: In function ‘main’:
+/home/codejune/ssu_2020/STD_DIR/20200009/25.c:38:1: error: expected ‘;’ before ‘}’ token
+ }
+ ^
+/home/codejune/ssu_2020/STD_DIR/20200009/25.c:38:1: error: expected declaration or statement at end of input

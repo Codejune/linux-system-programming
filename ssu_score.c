@@ -17,12 +17,12 @@ extern char id_table[SNUM][10];
 struct ssu_scoreTable score_table[QNUM];
 char id_table[SNUM][10];
 
-char saved_path[BUFLEN] = { 0 };
-char stuDir[BUFLEN];
-char ansDir[BUFLEN];
-char errorDir[BUFLEN];
+char saved_path[BUFLEN] = { 0 }; // $(PWD)
+char stuDir[BUFLEN]; // $(PWD)/STD_DIR
+char ansDir[BUFLEN]; // $(PWD)/ANS_DIR
+char errorDir[BUFLEN]; // $(PWD)/ERROR/
 char threadFiles[ARGNUM][FILELEN];
-char IDS[ARGNUM][FILELEN];
+char IDS[ARGNUM][FILELEN]; // -i 2020XXXX[n]
 
 int mOption = false;
 int eOption = false;
@@ -34,27 +34,27 @@ void ssu_score(int argc, char *argv[])
 {
 	int i;
 
-	for(i = 0; i < argc; i++){ // -h 옵션일 경우 도움말만 출력하고 프로그램 종료
+	for(i = 0; i < argc; i++){ // 어떠한 옵션이 들어가더라도 -h 가 들어갈 경우 도움말 출력 후 종료
 		if(!strcmp(argv[i], "-h")){
-			print_usage();
+			print_usage(); // 도움말 출력
 			return;
 		}
 	}
 
-	if(argc >= 3 && strcmp(argv[1], "-c") != 0){
-		strcpy(stuDir, argv[1]);
+	if(argc >= 3 && strcmp(argv[1], "-i") != 0){ // -i 옵션과 STD, AND 디렉토리가 같이 주어질 경우  
+		strcpy(stuDir, argv[1]); 
 		strcpy(ansDir, argv[2]);
 	}
 
-	if(!check_option(argc, argv))
+	if(!check_option(argc, argv)) // 옵션 인자 검사
 		exit(1);
 
-	if(!eOption && !tOption && !mOption && iOption){
-		do_iOption(IDS);
+	if(!eOption && !tOption && !mOption && iOption){ // -i 옵션만 존재할 경우
+		do_iOption(IDS); 
 		return;
 	}
 
-	getcwd(saved_path, BUFLEN); // $(PWD)
+	getcwd(saved_path, BUFLEN); // saved_path = $(PWD)
 
 	if(chdir(stuDir) < 0){ // STD_DIR 열기
 		fprintf(stderr, "%s doesn't exist\n", stuDir);
@@ -79,153 +79,151 @@ void ssu_score(int argc, char *argv[])
 
 	printf("grading student's test papers..\n"); 
 	score_students(); // 학생 답안 채점
-	if(iOption)
+	if(iOption) // i 옵션이 켜져 있을 경우
 		do_iOption(IDS);
-
 	return;
 }
 
-int check_option(int argc, char *argv[])
+int check_option(int argc, char *argv[]) // 옵션 인자 검사
 {
 	int i, j;
 	int c;
 
-	while((c = getopt(argc, argv, "e:ithm")) != -1)
+	while((c = getopt(argc, argv, "e:ithm")) != -1) // 각각의 옵션 파싱을 위해 반복
 	{
 		switch(c){
-			case 'e':
+			case 'e': // -e 옵션
 				eOption = true;
-				strcpy(errorDir, optarg);
+				strcpy(errorDir, optarg); // 옵션과 함께 바로 뒤에오는 디렉토리 인자를 errorDir로 복사
 
-				if(access(errorDir, F_OK) < 0)
+				if(access(errorDir, F_OK) < 0) // 디렉토리가 존재하지 않을 경우
 					mkdir(errorDir, 0755);
-				else{
-					rmdirs(errorDir);
-					mkdir(errorDir, 0755);
+				else{ // 디렉토리가 존재할 경우
+					rmdirs(errorDir); // 기존 디렉토리를 지우고
+					mkdir(errorDir, 0755); // 새로 생성
 				}
 				break;
 			case 'h':
-				hOption = true;
+				hOption = true; // -h 옵션
 				break;
-			case 't':
+			case 't': // -t 옵션
 				tOption = true;
-				i = optind;
-				j = 0;
+				i = optind; // 다음번에 처리될 옵션의 인덱스, QNAME
+				j = 0; // -lpthread로 돌릴 문제들의 인덱스
 
-				while(i < argc && argv[i][0] != '-'){
+				while(i < argc && argv[i][0] != '-') { // -가 붙은 인자가 나오기 전까지 반복
 
-					if(j >= ARGNUM)
+					if(j >= ARGNUM) // ARGNUM : 5, 개수 초과
 						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
-					else
+					else // -lpthread로 돌릴 문제들을 등록
 						strcpy(threadFiles[j], argv[i]);
 					i++; 
 					j++;
 				}
 				break;
-			case 'm':
+			case 'm': // -m 옵션
 				mOption = true;
 				break;
-			case 'i':
+			case 'i': // -i 옵션
 				iOption = true;
-				i = optind;
-				j = 0;
+				i = optind; // 다음번에 처리될 옵션의 인덱스, 2020XXXX
+				j = 0; // 틀린 문제 목록을 출력할 학번들의 인덱스
 
-				while(i < argc && argv[i][0] != '-'){
+				while(i < argc && argv[i][0] != '-'){ // -가 붙은 인자가 나오기 전까지 반복
 
-					if(j >= ARGNUM)
+					if(j >= ARGNUM) // ARGNUM : 5, 개수 초과
 						printf("Maximum Number of Argument Exceeded.  :: %s\n", argv[i]);
-					else {
+					else { // 틀린 문제 목록을 볼 학번을 등록
 						strcpy(IDS[j], argv[i]);
 					}
 					i++; 
 					j++;
 				}
 				break;
-			case '?':
+			case '?': // 옵션을 알 수 없는 경우
 				printf("Unkown option %c\n", optopt);
 				return false;
 		}
 	}
-
 	return true;
 }
 
-void do_mOption( ) 
+void do_mOption( ) // -m 옵션
 {
-	FILE *fp;
-	char input[BUFLEN];
-	char qname[BUFLEN];
-	double score;
-	char *q;
-	int line;
-	int isEOF = 0;
+	FILE *fp; // score_table.csv 파일 구조체
+	char input[BUFLEN]; // 점수를 수정할 문제, N or N-N
+	char qname[BUFLEN]; // score_table.csv에서 찾은 문제 파일 제목
+	double score; // score_table.csv에서 찾은 문제 할당 점수
+	char *q; 
+	int line; // score_table.csv에서 수정할 문제의 라인 인덱스
+	int isEOF = 0; // 탐색 실패 확인 변수
 
-	chdir(ansDir);
+	chdir(ansDir); // $(PWD)/ANS_DIR
 
 	while(1) {
 
-		if((fp = fopen("score_table.csv", "r")) == NULL) {
+		if((fp = fopen("score_table.csv", "r")) == NULL) { // score_table.csv 파일 열기
 			fprintf(stderr, "file open error for score_table.csv\n");
 			return;
 		}
-		memset(input, 0, strlen(input));
+		memset(input, 0, strlen(input)); 
 		printf("Input question's number to modify >> ");
 		scanf("%s", input);
 		getchar();
-		line = 0;
-		while((isEOF = fscanf(fp, "%[^,],%lf\n", qname, &score)) != EOF)
+		line = 0; // 라인 인덱스 초기화
+		while((isEOF = fscanf(fp, "%[^,],%lf\n", qname, &score)) != EOF) // , 나오기 전까지의 내용을 qname, 그 뒤의 내용을 score에 할당
 		{
-			q = strtok(qname, ".");
-			if(strcmp(q, input) == 0) {
-				printf("Current score : %g\n", score);
+			q = strtok(qname, "."); // 확장자 기준 앞의 문제 번호만 파싱
+			if(strcmp(q, input) == 0) { // 입력한 문제 번호가 score_table.csv에 존재할 경우
+				printf("Current score : %g\n", score); 
 				printf("New score : ");
-				scanf("%lf", &score);
-				if(rescore(line, score)) {
+				scanf("%lf", &score); 
+				if(rescore(line, score)) { // score_table.csv 를 다시 작성, 실패 시 1 반환
 					fprintf(stderr, "Rewrite error for score_table.csv\n");
 					return;
 				}
-				isEOF = 0;
+				isEOF = 0; // 탐색 성공
 				break;
 			}	
 			line++;	
 			memset(qname, 0 , strlen(qname));
 		}
-		if(strcmp(input, "no") == 0)
+		if(strcmp(input, "no") == 0) // no를 입력받았을 경우
 			break;
-		if(isEOF == EOF)
+		if(isEOF == EOF) // 탐색에 실패했을경우
 			printf("Unknown question's number\n");
-		fseek(fp, 0, SEEK_SET);
+		fseek(fp, 0, SEEK_SET); // 새로운 문제 점수 수정을 위해파일의 시작위치로 오프셋 이동
 	}
 	fclose(fp);
-	chdir(saved_path);
+	chdir(saved_path); // $(PWD)
 }
 
-int rescore(int line, double new_score) {
-	FILE *origin;
-	FILE *new;
-	int line_cnt = 0;
-	char qname[BUFLEN] = { 0 };
-	char tmp[BUFLEN] = { 0 };
-	char table_path[BUFLEN] = { 0 };
-	char temp_path[BUFLEN] = { 0 };
+int rescore(int line, double new_score) { // 수정 할 점수로 score_table.csv를 다시 작성 (성공:0 실패:1)
+	FILE *origin; // ANS_DIR/score_table.csv 파일 구조체
+	FILE *new; // ANS_DIR/temp.csv 파일 구조체
+	int line_cnt = 0; // temp.csv 라인 인덱스 변수
+	char qname[BUFLEN] = { 0 }; // 문제 파일 이름
+	char tmp[BUFLEN] = { 0 }; 
+	char table_path[BUFLEN] = { 0 }; // $(PWD)/ANS_DIR/score_table.csv
+	char temp_path[BUFLEN] = { 0 }; // $(PWD)/ANS_DIR/temp.csv
 	double origin_score;
 	
-	if((origin = fopen("score_table.csv", "r")) == NULL) {
+	if((origin = fopen("score_table.csv", "r")) == NULL) { // score_table.csv를 읽기 전용 열기, 존재 필수
 		fprintf(stderr, "file open error for score_table.csv\n");
 		return 1;
 	}
 
-	if((new = fopen("temp.csv", "w+")) == NULL) {
+	if((new = fopen("temp.csv", "w")) == NULL) { // temp.csv를 쓰기 전용 열기, 존재시 새로쓰기, 없으면 생성
 		fprintf(stderr, "file open error for temp.csv\n");
 		return 1;
 	}
 	
-	while(fscanf(origin, "%[^,],%lf\n", qname, &origin_score) != EOF) {
-		if(line_cnt == line) {
-			sprintf(tmp, "%s,%.2f\n", qname, new_score);
+	while(fscanf(origin, "%[^,],%lf\n", qname, &origin_score) != EOF) { // score_table.csv에서 문제 파일명을 쉼표전까지 qname, 점수를 개행 전까지 origin_score에 할당
+		if(line_cnt == line) { // 수정할 라인과 현재 쓰기 할 라인이 같을 경우
+			sprintf(tmp, "%s,%.2f\n", qname, new_score); // 수정된 점수로 새로 쓰기
 			fwrite(tmp, strlen(tmp), 1, new);
-		} else {
-			sprintf(tmp, "%s,%.2f\n", qname, origin_score);
+		} else { // 수정할 라인과 현재 쓰기 할 라인이 다를 경우
+			sprintf(tmp, "%s,%.2f\n", qname, origin_score); // 기존 점수로 새로 쓰기
 			fwrite(tmp, strlen(tmp), 1, new);
 		}
 		line_cnt++;
@@ -235,60 +233,61 @@ int rescore(int line, double new_score) {
 	fclose(new);
 	sprintf(table_path, "%s/%s", ansDir, "score_table.csv");
 	sprintf(temp_path, "%s/%s", ansDir, "temp.csv");
-	file_remove(table_path, 0);
-	file_copy(temp_path, table_path);
-	file_remove(temp_path, 0);
+	file_remove(table_path, 0); // rm score_table.csv
+	file_copy(temp_path, table_path); // cp temp.csv score_table.csv
+	file_remove(temp_path, 0); // rm temp.csv
 	return 0;
 }
 
-void file_remove(const char *file, _Bool isDir) 
+void file_remove(const char *file, _Bool isDir) // rm file_path
 {
 	char remove[BUFLEN] = { 0 };
-	if(isDir)
-		sprintf(remove, "rm - r %s", file);
-	else
-		sprintf(remove, "rm %s", file);
-	system(remove);
+	if(isDir) // 디렉토리의 경우
+		sprintf(remove, "rm - r %s", file); // 재귀적 반복 삭제
+	else // 파일의 경우
+		sprintf(remove, "rm %s", file); // 일반 삭제
+	system(remove); 
 }
 
-void file_copy(const char *from, const char *to) 
+void file_copy(const char *from, const char *to) // cp from_path to_path
 {
 	char copy[BUFLEN] = { 0 };
 	sprintf(copy, "cp %s %s", from, to);
 	system(copy);
 }
 
-void do_iOption(char (*ids)[FILELEN]) // score.csv 에서 학생들의 틀린 문제 출력
+void do_iOption(char (*ids)[FILELEN]) // -i 옵션
 {
-	int i = 0;
-	FILE *fp;
-	char temp[BUFLEN] = { 0 };
-	char line[BUFLEN] = { 0 };
-	char header[BUFLEN] = { 0 };
-	int comma_cnt = 0;
-	char *next;
+	FILE *fp; // score.csv 파일 구조체
+	char line[BUFLEN] = { 0 }; // 점수 테이블 라인을 받을 버퍼
+	char header[BUFLEN] = { 0 }; // 점수 테이블 제목을 받을 버퍼
+	int comma_cnt = 0; // 쉼표 개수
+	char *tmp;
 
-	if((fp = fopen("score.csv", "r")) == NULL){
+	if((fp = fopen("score.csv", "r")) == NULL){ // score.csv를 읽기 전용 열기, 존재 필수
 		fprintf(stderr, "file open error for score.csv\n");
 		return;
 	}
 	
-	fscanf(fp, "%s", header); // 제목 줄
-	while(fscanf(fp, "%s\n", line) != EOF)
+	fscanf(fp, "%s", header); // score.csv 제목 줄 파싱
+	while(fscanf(fp, "%s\n", line) != EOF) // score.csv 학생 결과 채점 결과 파싱
 	{
 		char sid[BUFLEN] = { 0 };
 		char *p;
-		strncpy(sid, line, strlen(header));
-		p = strtok_r(sid, ",", &next);
+		p = strtok(line, ",");
 		
-		if(!is_exist(ids, sid)) // 제목 행 생략
+		if(!is_exist(ids, line)) // 해당 학번이 테이블에 존재하는지 확인, 헤더 생략
 			continue;
 
 		printf("%s's wrong answer :\n", p);
-		while((p = strtok_r(NULL, ",", &next)) != NULL) {
-			comma_cnt++;
-			if(strcmp(p, "0") == 0) 
-				printf("%s ", get_header_char(header, get_header_idx(header, comma_cnt)));
+		while((p = strtok(NULL, ",")) != NULL) { // 쉼표를 기준으로 문자열 구분
+			comma_cnt++; 
+			if(strcmp(p, "0") == 0) { // 구분한 점수가 0일 경우
+				tmp = get_header_char(header, get_header_idx(header, comma_cnt)); // 쉼표 개수 기준 문제 파일명 파싱
+				if(strstr(tmp, "sum") != NULL) // 만약 파일 명이 sum일 경우
+					break;
+				printf("%s ", tmp); // 출력
+			}
 		}
 		printf("\n");
 		comma_cnt = 0;
@@ -297,7 +296,7 @@ void do_iOption(char (*ids)[FILELEN]) // score.csv 에서 학생들의 틀린 �
 	fclose(fp);
 }
 
-int get_header_idx(char *header, int comma_cnt) 
+int get_header_idx(char *header, int comma_cnt) // 쉼표 개수 기준 파일명이 위치한 인덱스 파싱
 {
 	int i;
 	int count = 0;
@@ -306,14 +305,14 @@ int get_header_idx(char *header, int comma_cnt)
 		if(header[i] == ',') 
 			count++;
 		if(count == comma_cnt) {
-			idx = i + 1;
+			idx = i + 1; // 현재 쉼표의 인덱스에서 다음의 인덱스를 반환
 			break;
 		}
 	}
 	return idx;
 }
 
-char* get_header_char(char *header, int idx) 
+char* get_header_char(char *header, int idx) // 인덱스 기준 파일명 파싱
 {
 	char *temp = (char *)calloc(BUFLEN, sizeof(char));
 	int i = 0;

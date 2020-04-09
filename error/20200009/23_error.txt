@@ -1,0 +1,8 @@
+/home/codejune/ssu_2020/STD_DIR/20200009/23.c: In function ‘main’:
+/home/codejune/ssu_2020/STD_DIR/20200009/23.c:12:2: error: expected ‘=’, ‘,’, ‘;’, ‘asm’ or ‘__attribute__’ before ‘char’
+  char pattern[4] = "bcd";
+  ^~~~
+/home/codejune/ssu_2020/STD_DIR/20200009/23.c:13:13: error: ‘buf’ undeclared (first use in this function)
+  char *pos1=buf, *pos2=buf;
+             ^~~
+/home/codejune/ssu_2020/STD_DIR/20200009/23.c:13:13: note: each undeclared identifier is reported only once for each function it appears in
