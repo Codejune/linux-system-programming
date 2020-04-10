@@ -159,7 +159,7 @@ void compare_tree(node *root1,  node *root2, int *result)
 	}
 }
 
-int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
+int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN]) // TOKEN_CNT:50, MINLEN:64
 {
 	char *start, *end;
 	char tmp[BUFLEN];
@@ -171,11 +171,14 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN])
 	int lcount, rcount;
 	int p_str;
 	
-	clear_tokens(tokens);
+	clear_tokens(tokens); // 토큰 초기화
 
-	start = str;
+	start = str; // 정답 문자열 시작 포인터 지정
 	
-	if(is_typeStatement(str) == 0) 
+	// 0 : 의미 없음
+	// 1 : 캐스팅과 같은 곳에서 사용
+	// 2 : 자료형이 시작 단어일 경우
+	if(is_typeStatement(str) == 0) // 잘못된 작성일 경우
 		return false;	
 	
 	while(1)
