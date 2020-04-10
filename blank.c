@@ -40,8 +40,8 @@ void compare_tree(node *root1,  node *root2, int *result) // std_root, ans_root 
 		return;
 	}
 
-	if(!strcmp(root1->name, "<") || !strcmp(root1->name, ">") || !strcmp(root1->name, "<=") || !strcmp(root1->name, ">=")) {  // 학생 문자가 비교 연산자의 경우 
-		if(strcmp(root1->name, root2->name) != 0){ // 정답 문자와 같지 않을 경우
+	if(!strcmp(root1->name, "<") || !strcmp(root1->name, ">") || !strcmp(root1->name, "<=") || !strcmp(root1->name, ">=")) {  
+		if(strcmp(root1->name, root2->name) != 0){ // 학생 문자와 정답 문자가 같지 않을 경우
 
 			if(!strncmp(root2->name, "<", 1)) // 정답 문자가 '<' 
 				strncpy(root2->name, ">", 1); // 정답 문자에 '>' 복사
@@ -59,28 +59,28 @@ void compare_tree(node *root1,  node *root2, int *result) // std_root, ans_root 
 		}
 	}
 
-	if(strcmp(root1->name, root2->name) != 0){
+	if(strcmp(root1->name, root2->name) != 0){ // 학생 문자와 정답 문자가 같지 않을 경우
+		*result = false; 
+		return;
+	}
+
+	if((root1->child_head != NULL && root2->child_head == NULL) 
+		|| (root1->child_head == NULL && root2->child_head != NULL)){ // 비교할 자식 노드가 하나라도 존재하지 않을 경우
 		*result = false;
 		return;
 	}
 
-	if((root1->child_head != NULL && root2->child_head == NULL)
-		|| (root1->child_head == NULL && root2->child_head != NULL)){
-		*result = false;
-		return;
-	}
-
-	else if(root1->child_head != NULL){
-		if(get_sibling_cnt(root1->child_head) != get_sibling_cnt(root2->child_head)){
+	else if(root1->child_head != NULL){ // 학생 답안의 자식이 존재 할 경우
+		if(get_sibling_cnt(root1->child_head) != get_sibling_cnt(root2->child_head)){ // 형제 개수가 같지 않으면
 			*result = false;
 			return;
 		}
 
-		if(!strcmp(root1->name, "==") || !strcmp(root1->name, "!="))
+		if(!strcmp(root1->name, "==") || !strcmp(root1->name, "!=")) 
 		{
-			compare_tree(root1->child_head, root2->child_head, result);
+			compare_tree(root1->child_head, root2->child_head, result); // 학생 답안과 정답 답안 트리 비교(재귀)
 
-			if(*result == false)
+			if(*result == false) // 여러개의 답의 경우, 정답 답안 형제 트리 순환 비교
 			{
 				*result = true;
 				root2 = change_sibling(root2);
@@ -89,19 +89,19 @@ void compare_tree(node *root1,  node *root2, int *result) // std_root, ans_root 
 		}
 		else if(!strcmp(root1->name, "+") || !strcmp(root1->name, "*")
 				|| !strcmp(root1->name, "|") || !strcmp(root1->name, "&")
-				|| !strcmp(root1->name, "||") || !strcmp(root1->name, "&&"))
+				|| !strcmp(root1->name, "||") || !strcmp(root1->name, "&&")) 
 		{
-			if(get_sibling_cnt(root1->child_head) != get_sibling_cnt(root2->child_head)){
+			if(get_sibling_cnt(root1->child_head) != get_sibling_cnt(root2->child_head)){ // 형제 개수가 같지 않으면
 				*result = false;
 				return;
 			}
 
 			tmp = root2->child_head;
 
-			while(tmp->prev != NULL)
-				tmp = tmp->prev;
+			while(tmp->prev != NULL) // 정답의 이전 형제가 존재할 경우
+				tmp = tmp->prev; 
 
-			while(tmp != NULL)
+			while(tmp != NULL) // 여러개의 정답 트리 중 처음부터 학생 트리와 순회 비교
 			{
 				compare_tree(root1->child_head, tmp, result);
 			
@@ -114,9 +114,7 @@ void compare_tree(node *root1,  node *root2, int *result) // std_root, ans_root 
 				}
 			}
 		}
-		else{
-			compare_tree(root1->child_head, root2->child_head, result);
-		}
+		else compare_tree(root1->child_head, root2->child_head, result);
 	}	
 
 
@@ -830,7 +828,7 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 	return get_root(cur);
 }
 
-node *change_sibling(node *parent) // 주어진 노드를 자식 노드로 교체
+node *change_sibling(node *parent) // 자식의 형제 노드로 교체
 {
 	node *tmp;
 	
@@ -841,8 +839,8 @@ node *change_sibling(node *parent) // 주어진 노드를 자식 노드로 교�
 	parent->child_head->parent = parent;
 	parent->child_head->prev = NULL;
 
-	// 
-	parent->child_head->next = tmp;
+	// prev, next 유동 변경
+	parent->child_head->next = tmp; 
 	parent->child_head->next->prev = parent->child_head;
 	parent->child_head->next->next = NULL;
 	parent->child_head->next->parent = NULL;		
