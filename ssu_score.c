@@ -835,7 +835,7 @@ double compile_program(char *id, char *filename) // 프로그램 문제 컴파�
 	double result;
 	memcpy(qname, filename, strlen(filename) - strlen(strrchr(filename, '.'))); // qname = X
 	
-	isthread = is_thread(qname); // 
+	isthread = is_thread(qname); // -t 옵션으로 받은 문제인지 확인
 
 	// 정답 프로그램 컴파일
 	sprintf(tmp_f, "%s/%s", ansDir, filename); // ANS_DIR/X.c
