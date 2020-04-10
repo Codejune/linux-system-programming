@@ -49,9 +49,9 @@ void ssu_score(int argc, char *argv[])
 	if(!check_option(argc, argv)) // 옵션 인자 검사
 		exit(1);
 
-	if(!eOption && !tOption && !mOption && iOption){ // -i 옵션만 존재할 경우
+	if(!eOption && !tOption && !mOption && iOption) { // -i 옵션만 존재할 경우
 		do_iOption(IDS); 
-		return;
+		if(!iOption) return;
 	}
 
 	getcwd(saved_path, BUFLEN); // saved_path = $(PWD)
@@ -266,7 +266,7 @@ void do_iOption(char (*ids)[FILELEN]) // -i 옵션
 	char *tmp;
 
 	if((fp = fopen("score.csv", "r")) == NULL){ // score.csv를 읽기 전용 열기, 존재 필수
-		fprintf(stderr, "file open error for score.csv\n");
+		fprintf(stderr, "score.csv file doesn't exist!\n");
 		return;
 	}
 	
@@ -297,6 +297,7 @@ void do_iOption(char (*ids)[FILELEN]) // -i 옵션
 		memset(line, 0, strlen(line));
 		memset(error_line, 0 , strlen(error_line));
 	}
+	iOption = false;
 	fclose(fp);
 }
 

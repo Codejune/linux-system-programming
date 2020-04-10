@@ -5,6 +5,7 @@
 #include <ctype.h>
 #include "blank.h"
 
+// 자료형의 종류 구분, DATATYPE_SIZE:35, MINLEN:64
 char datatype[DATATYPE_SIZE][MINLEN] = {"int", "char", "double", "float", "long"
 			, "short", "ushort", "FILE", "DIR","pid"
 			,"key_t", "ssize_t", "mode_t", "ino_t", "dev_t"
@@ -13,7 +14,7 @@ char datatype[DATATYPE_SIZE][MINLEN] = {"int", "char", "double", "float", "long"
 			, "void", "size_t", "unsigned", "sigset_t", "sigjmp_buf"
 			, "rlim_t", "jmp_buf", "sig_atomic_t", "clock_t", "struct"};
 
-
+// 연산자 우선순위, OPERATOR_CNT:24
 operator_precedence operators[OPERATOR_CNT] = {
 	{"(", 0}, {")", 0}
 	,{"->", 1}	
@@ -29,32 +30,32 @@ operator_precedence operators[OPERATOR_CNT] = {
 	,{"=", 14}	,{"+=", 14}	,{"-=", 14}	,{"&=", 14}	,{"|=", 14}
 };
 
-void compare_tree(node *root1,  node *root2, int *result)
+void compare_tree(node *root1,  node *root2, int *result) // std_root, ans_root 파스트리 비교, 같음:1, 다름:0
 {
 	node *tmp;
 	int cnt1, cnt2;
 
-	if(root1 == NULL || root2 == NULL){
-		*result = false;
+	if(root1 == NULL || root2 == NULL){ // 비교할 트리 중 하나라도 트리가 존재하지 않을 경우
+		*result = false; 
 		return;
 	}
 
-	if(!strcmp(root1->name, "<") || !strcmp(root1->name, ">") || !strcmp(root1->name, "<=") || !strcmp(root1->name, ">=")){
-		if(strcmp(root1->name, root2->name) != 0){
+	if(!strcmp(root1->name, "<") || !strcmp(root1->name, ">") || !strcmp(root1->name, "<=") || !strcmp(root1->name, ">=")) {  // 학생 문자가 비교 연산자의 경우 
+		if(strcmp(root1->name, root2->name) != 0){ // 정답 문자와 같지 않을 경우
 
-			if(!strncmp(root2->name, "<", 1))
-				strncpy(root2->name, ">", 1);
+			if(!strncmp(root2->name, "<", 1)) // 정답 문자가 '<' 
+				strncpy(root2->name, ">", 1); // 정답 문자에 '>' 복사
 
-			else if(!strncmp(root2->name, ">", 1))
-				strncpy(root2->name, "<", 1);
+			else if(!strncmp(root2->name, ">", 1)) // 정답 문자가 '>'
+				strncpy(root2->name, "<", 1); // 정답 문자에 '<' 복사
 
-			else if(!strncmp(root2->name, "<=", 2))
-				strncpy(root2->name, ">=", 2);
+			else if(!strncmp(root2->name, "<=", 2)) // 정답 문자가 "<="
+				strncpy(root2->name, ">=", 2); // 정답 문자에 ">=" 복사
 
-			else if(!strncmp(root2->name, ">=", 2))
-				strncpy(root2->name, "<=", 2);
+			else if(!strncmp(root2->name, ">=", 2)) // 정답 문자가 ">="
+				strncpy(root2->name, "<=", 2); // 정답 문자에 "<=" 복사
 
-			root2 = change_sibling(root2);
+			root2 = change_sibling(root2); // 다음 형제 노드 이동
 		}
 	}
 
@@ -829,16 +830,18 @@ node *make_tree(node *root, char (*tokens)[MINLEN], int *idx, int parentheses)
 	return get_root(cur);
 }
 
-node *change_sibling(node *parent)
+node *change_sibling(node *parent) // 주어진 노드를 자식 노드로 교체
 {
 	node *tmp;
 	
 	tmp = parent->child_head;
 
+	// 자식 노드 포인팅
 	parent->child_head = parent->child_head->next;
 	parent->child_head->parent = parent;
 	parent->child_head->prev = NULL;
 
+	// 
 	parent->child_head->next = tmp;
 	parent->child_head->next->prev = parent->child_head;
 	parent->child_head->next->next = NULL;
