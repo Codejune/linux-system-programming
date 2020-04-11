@@ -1,21 +1,23 @@
 #ifndef BLANK_H_
 #define BLANK_H_
-
+// 참 거짓
 #ifndef true
 	#define true 1
 #endif
 #ifndef false
 	#define false 0
 #endif
+// 버퍼 크기
 #ifndef BUFLEN
 	#define BUFLEN 1024
 #endif
-
 #define OPERATOR_CNT 24
 #define DATATYPE_SIZE 35
 #define MINLEN 64
+// 토큰 개수
 #define TOKEN_CNT 50
 
+// 노드 구조체
 typedef struct node{
 	int parentheses;
 	char *name;
@@ -25,6 +27,7 @@ typedef struct node{
 	struct node *next;
 }node;
 
+// 연산자 우선순위 구조체
 typedef struct operator_precedence{
 	char *operator;
 	int precedence;
@@ -45,7 +48,6 @@ node *insert_node(node *old, node *new);
 node *get_last_child(node *cur);
 void free_node(node *cur);
 int get_sibling_cnt(node *cur);
-
 int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN]);
 int is_typeStatement(char *str);
 int find_typeSpecifier(char tokens[TOKEN_CNT][MINLEN]);
@@ -61,5 +63,4 @@ char *ltrim(char *_str);
 void remove_space(char *str);
 int check_brackets(char *str);
 char* remove_extraspace(char *str);
-
 #endif
