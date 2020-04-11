@@ -11,8 +11,8 @@
 #include "ssu_score.h"
 #include "blank.h"
 
-extern struct ssu_scoreTable score_table[QNUM];
-extern char id_table[SNUM][10];
+//extern struct ssu_scoreTable score_table[QNUM];
+//extern char id_table[SNUM][10];
 
 struct ssu_scoreTable score_table[QNUM];
 char id_table[SNUM][10];

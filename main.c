@@ -4,8 +4,6 @@
 #include <sys/time.h>
 #include "ssu_score.h"
 
-#define SECOND_TO_MICRO 1000000
-
 void ssu_runtime(struct timeval *begin_t, struct timeval *end_t);
 
 int main(int argc, char *argv[])
