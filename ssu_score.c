@@ -747,16 +747,16 @@ int score_blank(char *id, char *filename) // 빈칸 문제 채점
 		strcpy(a_answer, ltrim(rtrim(a_answer))); // 정답 답안의 좌우 공백 지우기
 
 		if(has_semicolon == false){ // 학생 답안의 끝에 ';'이 존재하지 않을 경우
-			if(a_answer[strlen(a_answer) -1] == ';')  // 정답 답안의 끝에 ';' 붙여주기
-				continue;
+			if(a_answer[strlen(a_answer) -1] == ';')  // 정답 답안의 끝에 ';'이 존재하면 
+				continue; // 넘어감
 		}
 
 		else if(has_semicolon == true) // 학생 답안에 ';'이 존재할 경우
 		{
 			if(a_answer[strlen(a_answer) - 1] != ';') // 정답 답안 내용의 끝이 ';'가 아닐 경우
-				continue;
+				continue; // 넘어감
 			else
-				a_answer[strlen(a_answer) - 1] = '\0'; // 정답 답안 내용의 끝이 NULL일경우
+				a_answer[strlen(a_answer) - 1] = '\0'; // 정답 답안 내용의 끝의 세미콜론을 지우고 NULL을 넣음
 		}
 
 		if(!make_tokens(a_answer, tokens)) // 정답 답안 토큰 생성, 정상:1, 오류:0

@@ -566,7 +566,7 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN]) // 주어진 문자�
 			return false;
 	}
 
-	
+
 	while((p_str = find_typeSpecifier2(tokens)) != -1){  
 		if(!reset_tokens(p_str, tokens))
 			return false;
@@ -943,38 +943,38 @@ node *get_high_precedence_node(node *cur, node *new) // 두 노드 중 우선순
 		while(cur->prev != NULL){ // 형제중 맏형 노드로 이동 후
 			cur = cur->prev;
 			
-			return get_high_precedence_node(cur, new); // 맏형와 비교
+			return get_high_precedence_node(cur, new); // 맏형노드와 우선순위 비교
 		}
 
 
-		if(cur->parent != NULL) // 맏형 노드와도 비교 후 새 연산자 노드가 더 클 경우, 부모님 호출
-			return get_high_precedence_node(cur->parent, new); // 부모님과 비교
+		if(cur->parent != NULL) // 맏형 노드와도 비교 후 새 연산자 노드가 더 클 경우, 부모 노드 호출
+			return get_high_precedence_node(cur->parent, new); // 부모 노드와 우선순위 비교
 	}
 
-	if(cur->parent == NULL) // 부모님도 못이기면
-		return cur; //그냥 부모님 돌아가시라 그래;;
+	if(cur->parent == NULL) // 더이상 부모 노드가 없을경우
+		return cur; // 현재 노드 반환
 }
 
-node *get_most_high_precedence_node(node *cur, node *new) // 새 연산자와 형제,조상님 겨루기, 새연산자 노드가 가장 강하면 새 연산자 노드도 리턴
+node *get_most_high_precedence_node(node *cur, node *new) // 새 연산자와 기존 연산자 노드,형제,부모 비교, 새연산자 노드가 우선순위가 가장 높을경우 새 연산자 노드도 리턴
 {
-	node *operator = get_high_precedence_node(cur, new); // 기존연산자(부모님, 조상님 포함)와 새 연산자 우선순위 비교
+	node *operator = get_high_precedence_node(cur, new); // 기존연산자(형제, 부모 포함)와 새 연산자 우선순위 비교
 	node *saved_operator = operator; 
 
-	while(1) // 우월한 노드가 판별되고
+	while(1) // 가장 우선순위가 높은 연산자가 판별되고
 	{
-		if(saved_operator->parent == NULL) // 가장 우월한 노드의 조상이 이세상에 존재하지 않으면 
-			break; // 이승 탈출
+		if(saved_operator->parent == NULL) // 가장 우선순위의 노드의 부모가 존재하지 않으면 (새 연산자 혹은 기존 최우선 연산자), 더이상 비교 불가
+			break; 
 
-		if(saved_operator->prev != NULL) // 가장 우월한 노드의 형제들이 존재하면
-			operator = get_high_precedence_node(saved_operator->prev, new); // 형제들과 서열싸움 시작
+		if(saved_operator->prev != NULL) // 가장 우선순위 노드의 형제들이 존재하면
+			operator = get_high_precedence_node(saved_operator->prev, new); // 형제노드들과 우선순위 비교
 
-		else if(saved_operator->parent != NULL) // 만약 형제는 1위 먹었는데, 조상님이 세상에 존재하시면
-			operator = get_high_precedence_node(saved_operator->parent, new); // 조상님들과 태그매치 시작
+		else if(saved_operator->parent != NULL) // 가장 우선순위 노드의 부모 노드가 존재할 경우
+			operator = get_high_precedence_node(saved_operator->parent, new); // 부모노드와 우선순위 비교
 
-		saved_operator = operator; // 내가 세상에서 제일 강하면
+		saved_operator = operator; // 형제 노드도 없고, 부모노드도 없을 경우 
 	}
 	
-	return saved_operator; // 내가 짱
+	return saved_operator; // 결정된 최우선 노드 반환
 }
 
 node *insert_node(node *old, node *new) // 노드를 삽입, 삽입한 위치이후 노드는 자식관계로 전환, 삽입한 노드 반환
