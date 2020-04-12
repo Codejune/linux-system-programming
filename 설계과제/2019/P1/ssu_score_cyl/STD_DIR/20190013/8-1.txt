@@ -1,0 +1,1 @@
+(fd1 = open(filename, O_RDWR)) < 0

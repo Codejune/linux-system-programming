@@ -1,0 +1,1 @@
+execlp("./date", "date", (char *)0)

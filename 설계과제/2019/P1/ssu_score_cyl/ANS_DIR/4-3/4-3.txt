@@ -1,0 +1,1 @@
+tid=pthread_self() : tid = gettid() : tid=pthread_self(); : tid = gettid();

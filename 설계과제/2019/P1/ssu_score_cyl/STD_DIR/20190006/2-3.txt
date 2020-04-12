@@ -1,0 +1,1 @@
+execlp("/usr/bin/who","echo",(char *)NULL)

@@ -1,0 +1,5 @@
+ssu_func, loc_var = 10, loc_volatile = 11, loc_register = 12
+ssu_func, loc_var = 10, loc_volatile = 11, loc_register = 12
+ssu_func, loc_var = 10, loc_volatile = 11, loc_register = 12
+after longjmp, loc_var = 10, loc_volatile = 11, loc_register = 12
+ret_val : 1

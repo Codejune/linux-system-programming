@@ -1,0 +1,1 @@
+wait3(&status,0,&rusage)==pid

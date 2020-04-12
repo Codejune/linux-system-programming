@@ -1,0 +1,1 @@
+(val = fcntl(fd, F_GETFL, 0)) < 0

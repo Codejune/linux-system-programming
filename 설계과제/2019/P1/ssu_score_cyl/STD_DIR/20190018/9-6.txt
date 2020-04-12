@@ -1,0 +1,1 @@
+sigprocmask(SIG_NONBLOCK, &sig_set, NULL)

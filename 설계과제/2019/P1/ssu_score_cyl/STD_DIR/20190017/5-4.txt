@@ -1,0 +1,1 @@
+pthread_join(pid1, NULL)

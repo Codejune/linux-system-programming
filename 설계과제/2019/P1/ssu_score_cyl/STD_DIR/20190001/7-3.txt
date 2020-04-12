@@ -1,0 +1,1 @@
+val |= O_NONBLOCK

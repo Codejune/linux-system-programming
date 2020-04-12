@@ -1,0 +1,1 @@
+execvp("find", args) < 0

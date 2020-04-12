@@ -1,0 +1,1 @@
+(status = times(&tms_start)) < 0

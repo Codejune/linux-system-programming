@@ -1,0 +1,1 @@
+(flag=fcntl(fd1,F_GETFL,0))==-1

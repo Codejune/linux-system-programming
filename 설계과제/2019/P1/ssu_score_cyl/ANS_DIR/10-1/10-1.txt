@@ -1,0 +1,1 @@
+execv("/usr/bin/find",args)<0 : execv("find",args)<0 : execv("/usr/bin/find",args)==-1 : execv("find",args)==-1

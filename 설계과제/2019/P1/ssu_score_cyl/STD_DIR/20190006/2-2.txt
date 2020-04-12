@@ -1,0 +1,1 @@
+execlp("/bin/date","echo",(char *)NULL)

@@ -1,0 +1,1 @@
+(fd1 = open(filename, "rw", O_APPEND)) < 0

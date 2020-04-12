@@ -1,0 +1,1 @@
+fcntl(val, F_SETFL, flags) == -1 

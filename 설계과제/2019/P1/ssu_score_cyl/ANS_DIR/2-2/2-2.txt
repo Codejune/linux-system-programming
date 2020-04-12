@@ -1,0 +1,1 @@
+execlp("date","date",(char*)0) : execlp("date","date",0) : execlp("date","date") : execlp("date", "date", NULL) : execlp("/bin/date", "date", NULL) : execlp("date","date",(char*)0); : execlp("date","date",0); : execlp("date","date"); : execlp("date", "date", NULL); : execlp("/bin/date", "date", NULL);

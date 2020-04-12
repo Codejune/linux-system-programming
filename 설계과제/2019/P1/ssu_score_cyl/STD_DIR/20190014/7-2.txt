@@ -1,0 +1,1 @@
+(val = fcntl(fd, F_GETFL, flags)) == -1
