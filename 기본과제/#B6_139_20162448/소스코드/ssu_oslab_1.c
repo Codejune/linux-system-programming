@@ -6,4 +6,3 @@ int main(void)
 	printf("This is oslab file\n");
 	exit(0);
 }
-
