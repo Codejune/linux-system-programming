@@ -10,7 +10,7 @@ int main(void)
 	printf("First printf : Hello OSLAB!!\n");
 
 	if((fd = open(fname, O_RDONLY)) < 0) { // 파일 읽기 전용 열기
-		fprintF(stderr, "open error for %s\n", fname);
+		fprintf(stderr, "open error for %s\n", fname);
 		exit(1);
 	}
 

@@ -12,7 +12,7 @@ int main(void)
 	}
 	else { // 성공적으로 열렸을 경우
 		printf("Success!\n");
-		pritnf("Opening \" %s\" in \"r\" mode!\n", fname);
+		printf("Opening \" %s\" in \"r\" mode!\n", fname);
 	}
 	fclose(fp);
 	exit(0);
