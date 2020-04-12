@@ -305,7 +305,7 @@ int get_header_idx(char *header, int comma_cnt) // 쉼표 개수 기준 파일�
 {
 	int i;
 	int count = 0;
-	int idx;
+	int idx = 0;
 	for(int i = 0; i < strlen(header); i++) {
 		if(header[i] == ',') 
 			count++;

@@ -40,20 +40,20 @@ void compare_tree(node *root1,  node *root2, int *result) // std_root, ans_root 
 		return;
 	}
 
-	if(!strcmp(root1->name, "<") || !strcmp(root1->name, ">") || !strcmp(root1->name, "<=") || !strcmp(root1->name, ">=")) {  
-		if(strcmp(root1->name, root2->name) != 0){ // 학생 문자와 정답 문자가 같지 않을 경우
+	if(!strcmp(root1->name, "<") || !strcmp(root1->name, ">") || !strcmp(root1->name, "<=") || !strcmp(root1->name, ">=")) { // 비교 연산자의 경우
+		if(strcmp(root1->name, root2->name) != 0){ // 정답문자에 반대방향의 부호를 복사 
 
-			if(!strncmp(root2->name, "<", 1)) // 정답 문자가 '<' 
-				strncpy(root2->name, ">", 1); // 정답 문자에 '>' 복사
+			if(!strncmp(root2->name, "<", 1)) 
+				strncpy(root2->name, ">", 1); 
 
-			else if(!strncmp(root2->name, ">", 1)) // 정답 문자가 '>'
-				strncpy(root2->name, "<", 1); // 정답 문자에 '<' 복사
+			else if(!strncmp(root2->name, ">", 1)) 
+				strncpy(root2->name, "<", 1);
 
-			else if(!strncmp(root2->name, "<=", 2)) // 정답 문자가 "<="
-				strncpy(root2->name, ">=", 2); // 정답 문자에 ">=" 복사
+			else if(!strncmp(root2->name, "<=", 2)) 
+				strncpy(root2->name, ">=", 2); 
 
-			else if(!strncmp(root2->name, ">=", 2)) // 정답 문자가 ">="
-				strncpy(root2->name, "<=", 2); // 정답 문자에 "<=" 복사
+			else if(!strncmp(root2->name, ">=", 2)) 
+				strncpy(root2->name, "<=", 2); 
 
 			root2 = change_sibling(root2); // 다음 형제 노드 이동
 		}
@@ -174,10 +174,9 @@ int make_tokens(char *str, char tokens[TOKEN_CNT][MINLEN]) // 주어진 문자�
 
 	start = str; // 정답 문자열 시작 포인터 지정
 	
-	/*
 	if(is_typeStatement(str) == 0) // 잘못된 작성일 경우, gcc 체크
 		return false;	
-	*/
+
 
 	while(1)
 	{
