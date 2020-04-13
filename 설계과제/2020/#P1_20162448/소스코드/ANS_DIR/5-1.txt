@@ -1,0 +1,1 @@
+getcwd(pathname, PATH_MAX):getcwd(pathname, 1024)

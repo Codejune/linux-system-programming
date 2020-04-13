@@ -1,0 +1,1 @@
+0 > fcntl(fd, F_SETFL, val)
