@@ -8,7 +8,7 @@ void ssu_setbuf(FILE *fp, char *buf);
 int main(void)
 {
 	char buf[BUFFER_SIZE];
-	char *fname= "/dev/pts/19"; // 파일 명
+	char *fname= "/dev/tty1"; // 파일 명
 	FILE *fp;
 
 	if ((fp= fopen(fname, "w")) == NULL) { // 쓰기 전용 모드로 파일 열기
@@ -37,7 +37,7 @@ int main(void)
 
 void ssu_setbuf(FILE *fp, char *buf)
 {
-	size_tsize;
+	size_t size;
 	int fd;
 	int mode;
 

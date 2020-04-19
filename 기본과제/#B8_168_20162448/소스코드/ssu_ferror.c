@@ -5,7 +5,7 @@ int main(int argc, char *argv[])
 	FILE *fp;
 	int character;
 	if (argc!= 2) { // 인자 개수 부족 시
-		fprintf(stderr, "usage: %s <filename>\n", argv[0])
+		fprintf(stderr, "usage: %s <filename>\n", argv[0]);
 		exit(1);
 	}
 
