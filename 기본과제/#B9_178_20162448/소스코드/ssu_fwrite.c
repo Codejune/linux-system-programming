@@ -19,8 +19,8 @@ int main(void)
     
     printf("Input ID>> ");
     scanf("%d", &test1.id);
-    printf("Input ID>> ");
-    scanf("%d", &test2.id);
+    printf("Input name>> ");
+    scanf("%s", test1.name);
     
     if(fwrite(&test1, sizeof(struct ssu_id), 1, fp) != 1) {
         fprintf(stderr, "fwrite error\n");

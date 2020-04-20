@@ -11,4 +11,5 @@ int main(int argc, char *argv[])
     arg_directory = argv[1][0] != ' ' ? argv[1] : NULL; // 공백이 아니면 argv[1], 맞으면 NULL
     arg_prefix = argv[2][0] != ' ' ? argv[2] : NULL; // 공백이 아니면 argv[2], 맞으면 NULL
     printf("created : %s\n", tempnam(arg_directory, arg_prefix)); // 디렉토리 경로 지정 및 임시파일 생성
-    exit(0); }
+    exit(0); 
+}

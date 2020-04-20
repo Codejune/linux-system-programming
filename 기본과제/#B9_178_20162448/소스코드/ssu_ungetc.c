@@ -14,7 +14,7 @@ int main(void)
     }
     while (!feof(fp)) { // 파일의 끝에 도달할때까지
         while ((character = fgetc(fp)) != EOF && isdigit(character)) // EOF가 아니고, 숫자라면
-            number = 10 * number + character – 48; // 자리수만큼의 숫자 변환
+            number = 10 * number + character - 48; // 자리수만큼의 숫자 변환
         fprintf(stdout, " %d\n", number);
         number = 0;
         if (character != EOF) { // 파일의 끝이 아니라면
