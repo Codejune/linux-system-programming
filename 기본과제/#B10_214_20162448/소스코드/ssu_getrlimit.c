@@ -61,7 +61,7 @@ void ssu_show_limit(int rlim_type, char *rlim_name)
   if(rlim.rlim_max == RLIM_INFINITY) // 최대 크기가 무한대의 경우
     strcpy(max, "infinity");
   else
-    sprintf(cur, "%10ld", rlim.rlim_max);
+    sprintf(max, "%10ld", rlim.rlim_max);
 
   printf("%15s : %10s %10s\n", rlim_name, cur, max); // 출력
 }
