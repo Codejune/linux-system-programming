@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-int main(intargc, char *argv[])
+int main(int argc, char *argv[])
 {
   pid_t pid;
   char character, first, last;
