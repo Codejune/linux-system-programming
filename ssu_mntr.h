@@ -58,13 +58,26 @@
 #define TRASH "trash"
 #define LOG   "log.txt"
 
+// 모니터링 상태
+#define UNCHCK -1
+#define CHCKED  0
+#define CREATE  2
+#define MODIFY  3
+
 typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 	char name[BUFFER_SIZE]; // 파일 이름
-	struct stat status; // 파일 상태 정보
+	struct stat attr; // 파일 상태 정보
 	struct dirent **namelist; // 디렉토리 경우 하위 파일 목록
 	struct ssu_fileNode *next; 
 	struct ssu_fileNode *child;
+	int status;
 } file_node;
+
+typedef struct ssu_changeItem {
+	time_t time;
+	char name[BUFFER_SIZE];
+	int status;
+} change_file;
 
 
 // ssu_mntr.c
@@ -76,4 +89,10 @@ void print_usage(void);
 
 // mntr_process.c
 void mntr_process(char *pwd); // 모니터링 메인 함수
-file_node* make_tree(char *path); // 디렉토리 파일 목록 트리화
+file_node* make_list(char *path); // 디렉토리 파일 목록 트리화
+int count_file(file_node *head); // 주어진 목록 파일 개수
+void init_list_status(file_node *head, int status); // 모니터링 파일 상태 초기화 
+void compare_list(file_node *new_list, file_node *old_list); // 파일 목록 트리 비교
+int compare_file(file_node *new_file, file_node *old_file); // 파일 정보 비교
+int write_change_list(file_node *head, int idx, int status); // 변경 사항 목록 작성
+void sort_change_list(int idx); // 변경사항 목록 시간순 정렬
