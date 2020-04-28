@@ -56,28 +56,24 @@
 // 디렉토리
 #define CHECK "check"
 #define TRASH "trash"
-struct ssu_fileTable{ // 모니터링 리스트 테이블
-	struct stat status;
-	char name[BUFFER_SIZE];
-};
+#define LOG   "log.txt"
+
+typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
+	char name[BUFFER_SIZE]; // 파일 이름
+	struct stat status; // 파일 상태 정보
+	struct dirent **namelist; // 디렉토리 경우 하위 파일 목록
+	struct ssu_fileNode *next; 
+	struct ssu_fileNode *child;
+} file_node;
 
 
 // ssu_mntr.c
-void ssu_mntr(void); // 프롬프트 메인 함수
+void ssu_mntr(char *pwd); // 프롬프트 메인 함수
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void print_usage(void);
 
 // mntr_process.c
-void mntr_process(void); // 모니터링 메인 함수
-void set_fileTable(void); // 모니터링 리스트 테이블 생성
-void check_change(void);
-
-
-
-
-
-
-
-
+void mntr_process(char *pwd); // 모니터링 메인 함수
+file_node* make_tree(char *path); // 디렉토리 파일 목록 트리화

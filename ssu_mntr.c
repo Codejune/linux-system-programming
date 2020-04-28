@@ -1,11 +1,9 @@
 #include "ssu_mntr.h"
 
-extern char pwd[BUFFER_SIZE];
-
-void ssu_mntr(void) // 프롬프트 메인 함수
+void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 {
 	char command[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
-    char *prompt = "20162448>"; // 프롬프트 기본 출력 라인
+    	char *prompt = "20162448>"; // 프롬프트 기본 출력 라인
 	int command_type = false; // 실행 명령 타입
 
     while (command_type != EXIT) {
