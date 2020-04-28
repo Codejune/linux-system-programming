@@ -1,6 +1,8 @@
 #include "ssu_mntr.h"
 
-int ssu_mntr(int argc, char *argv[]) // 프롬프트 메인 함수
+extern char pwd[BUFFER_SIZE];
+
+void ssu_mntr(void) // 프롬프트 메인 함수
 {
 	char command[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
     char *prompt = "20162448>"; // 프롬프트 기본 출력 라인
@@ -31,6 +33,7 @@ int ssu_mntr(int argc, char *argv[]) // 프롬프트 메인 함수
 				break;
 			case TREE:
 				printf("트리다!\n");
+				system("tree check");
 				break;
 			case EXIT:
 				printf("종료다!\n");
@@ -45,8 +48,7 @@ int ssu_mntr(int argc, char *argv[]) // 프롬프트 메인 함수
     }
     fprintf(stdout, "Good bye...\n");
     fflush(stdout); // 표준 출력 스트림을 비움
-
-    exit(0); // 프롬프트 종료
+	return;
 }
 
 int get_command_type(char *command) // COMMAND 타입 확인 및 반환
