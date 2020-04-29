@@ -4,18 +4,23 @@
 void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 {
 	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
-	char command[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
+	char command_line[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
+	commands command;
 	int command_type = false; // 실행 명령 타입
 	int level_check[BUFFER_SIZE];
 
 	sprintf(check_path, "%s/%s", pwd, CHECK);
 
 	while (command_type != EXIT) {
+
 		fputs(PROMPT, stdout); // 프롬프트 라인 출력, 20162448> 
-		fgets(command, sizeof(command), stdin); // 실행 명령 입력
-		strcpy(command, ltrim(rtrim(command))); // 실행 명령 좌우 공백 지우기
-		command_type = get_command_type(command); // 명령 타입 구분
-		printf("command_type : %d\n", command_type);
+		fgets(command_line, sizeof(command_line), stdin); // 실행 명령 입력
+		strcpy(command_line, ltrim(rtrim(command_line))); // 실행 명령 좌우 공백 지우기
+
+		command = make_command_token(command_line); 
+		printf("token cnt : %d\n", command.cnt);
+		command_type = get_command_type(command.token[0]); // 명령 타입 구분
+
 		// COMMANDS
 		// DELETE(1)  :
 		// SIZE(2)    :
@@ -37,7 +42,6 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 				memset(level_check, 0, sizeof(level_check));
 				file_node *head = make_list(check_path);
 				print_list_tree(head, 0, level_check, true);
-				//system("tree check");
 				break;
 			case EXIT:
 				printf("종료다!\n");
@@ -55,33 +59,47 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 	return;
 }
 
+commands make_command_token(char *command_line) // 명령어 전체 문장 토큰화
+{
+	commands result;
+	char *tmp;
+	char *command;
+
+	result.cnt = 0;
+
+	//command_line[strlen(command_line) - 1] = '\0'; // 개행 문자 삭제?
+
+	if((command = strtok(command_line, " ")) == NULL) {
+		strcpy(result.token[result.cnt++], command);
+		return result;
+	}
+
+	to_lower_case(command);
+	strcpy(result.token[result.cnt++], command);
+
+	while((tmp = strtok(NULL, " ")) != NULL) 
+		strcpy(result.token[result.cnt++], tmp);
+
+	return result;
+}
+
 int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 {
-	char *command_ptr;
-	char tmp[MAX_BUFFER_SIZE] = { 0 };
-
-	strcpy(tmp, command); // strtok 함수로 인한 버퍼 변화 방지
-
-	if(strtok(tmp, " ") == NULL) // 명령어만 존재할 경우 확인
-		command_ptr = command;
-	else 
-		command_ptr = tmp;
-
 	// 명령어 타입 확인
-	if(strcmp(command_ptr, "DELETE") == 0 || strcmp(command_ptr, "delete") == 0)
-		return DELETE;
-	else if(strcmp(command_ptr, "SIZE") == 0 || strcmp(command_ptr, "size") == 0)
-		return SIZE;
-	else if(strcmp(command_ptr, "RECOVER") == 0 || strcmp(command_ptr, "recover") == 0)
-		return RECOVER;
-	else if(strcmp(command_ptr, "TREE") == 0 || strcmp(command_ptr, "tree") == 0)
-		return TREE;
-	else if(strcmp(command_ptr, "EXIT") == 0 || strcmp(command_ptr, "exit") == 0)
-		return EXIT;
-	else if(strcmp(command_ptr, "HELP") == 0 || strcmp(command_ptr, "help") == 0)
-		return HELP;
-	else if(strcmp(command_ptr, "") == 0)
+	if(command == NULL)
 		return false;
+	else if(strcmp(command, "delete") == 0)
+		return DELETE;
+	else if(strcmp(command, "size") == 0)
+		return SIZE;
+	else if(strcmp(command, "recover") == 0)
+		return RECOVER;
+	else if(strcmp(command, "tree") == 0)
+		return TREE;
+	else if(strcmp(command, "exit") == 0)
+		return EXIT;
+	else if(strcmp(command, "help") == 0)
+		return HELP;
 	else
 		return UNKNOWN;
 }
@@ -168,6 +186,18 @@ char *ltrim(char *_str) // 문자열 왼쪽 공백 제거
 		++start;
 	_str = start;
 	return _str;
+}
+
+void to_lower_case(char *str) // 문자열 소문자 변환
+{
+	int i = 0;
+
+	while(str[i]) {
+		if(str[i] >= 'A' && str[i] <= 'Z'){
+			str[i] = str[i]+32;
+		}
+		i++;
+	}
 }
 
 void print_usage(void) // 사용법 출력
