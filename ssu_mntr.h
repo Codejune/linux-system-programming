@@ -64,6 +64,10 @@
 #define CREATE  2
 #define MODIFY  3
 
+// 형식
+#define YYMMDD_HHMMSS "%.4d-%.2d-%.2d %.2d:%.2d:%.2d"
+#define PROMPT "20162448>"
+
 typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 	char name[BUFFER_SIZE]; // 파일 이름
 	struct stat attr; // 파일 상태 정보
@@ -96,3 +100,4 @@ void compare_list(file_node *new_list, file_node *old_list); // 파일 목록 �
 int compare_file(file_node *new_file, file_node *old_file); // 파일 정보 비교
 int write_change_list(file_node *head, int idx, int status); // 변경 사항 목록 작성
 void sort_change_list(int idx); // 변경사항 목록 시간순 정렬
+void write_change_log(int idx); // 변경사항 파일 기록

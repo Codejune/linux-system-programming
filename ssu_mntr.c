@@ -3,11 +3,10 @@
 void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 {
 	char command[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
-    	char *prompt = "20162448>"; // 프롬프트 기본 출력 라인
 	int command_type = false; // 실행 명령 타입
 
     while (command_type != EXIT) {
-        fputs(prompt, stdout); // 프롬프트 라인 출력, 20162448> 
+        fputs(PROMPT, stdout); // 프롬프트 라인 출력, 20162448> 
 		fgets(command, sizeof(command), stdin); // 실행 명령 입력
 		strcpy(command, ltrim(rtrim(command))); // 실행 명령 좌우 공백 지우기
 		command_type = get_command_type(command); // 명령 타입 구분
@@ -110,8 +109,12 @@ void print_usage(void) // 사용법 출력
 	printf("Usage : [COMMAND]\n");
 	printf("COMMAND : \n");
 	printf(" DELETE  [FILENAME] [END_TIME] [OPTION]     delete the file at the END_TIME\n");
-	printf(" SIZE    [FILENAME] [OPTION]                print file path and size\n");
+	printf(" OPTION :  -i	                            delete file without moving 'trash' directory\n");
+	printf("           -r                               re-confirm when the specified time, delete or not to delete\n\n");
+	printf(" SIZE    [FILENAME] [OPTION]                print relative file path and size\n");
+	printf(" OPTION :  -d     [NUMBER]                  print as much as NUMBER level\n\n");
 	printf(" RECOVER [FILENAME] [OPTION]                restore deleted files to their original path\n");
+	printf(" OPTION :  -l                               print file list in 'trash' directory sort by oldest deletion time before command execute\n\n");
 	printf(" TREE                                       print a list of monitoring files in a tree format.\n");
 	printf(" EXIT                                       program exit\n");
 	printf(" HELP                                       print usage\n");

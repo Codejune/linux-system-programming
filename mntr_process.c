@@ -1,6 +1,5 @@
 #include "ssu_mntr.h"
 
-char check_path[BUFFER_SIZE] = { 0 }; // $(PWD)/check 절대경로
 change_file change_list[MAX_BUFFER_SIZE]; // 변경 목록
 
 void mntr_process(char *pwd) // 모니터링 메인 함수
@@ -10,6 +9,7 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
 	int is_first = true;
 	int change_list_cnt;
+	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
 
 	if(access(CHECK, F_OK) < 0) // 모니터링 디렉토리 확인
 			mkdir(CHECK, 0755); // 존재하지 않을 경우 생성
@@ -26,13 +26,14 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 		new_list = make_list(check_path); // 현재 파일 목록 및 상태 저장
 		new_list_cnt = count_file(new_list); // 현재 목록에 존재하는 파일 개수
 		init_list_status(new_list->child, UNCHCK); // 현재 파일 목록 모니터링 상태 초기화
-		printf("siba1\n");
+		
 		if(is_first) { // 최초 실행일 경우
 			old_list = new_list;
 			old_list_cnt = new_list_cnt;
 			is_first = false;
 			continue;
 		}
+
 
 		compare_list(new_list->child, old_list->child);
 		change_list_cnt = write_change_list(new_list->child, 0, CREATE);
@@ -42,13 +43,12 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 		for(int i = 0; i < change_list_cnt; i++) 
 			printf("change_list[%d] = %d, %s\n", i, change_list[i].status, change_list[i].name);
 
-		//write_log(change_list_cnt);
+		write_change_log(change_list_cnt);
 		
 		old_list = new_list;
 		old_list_cnt = new_list_cnt;
 		init_list_status(old_list->child, UNCHCK);
-		printf("siba1\n");
-
+		sleep(3);
 	}
 }
 
@@ -114,7 +114,7 @@ int count_file(file_node *head) // 주어진 목록 파일 개수
 			cnt += count_file(now); // 해당 디렉토리 파일 개수 재귀 탐색
 			now = now->next; // 다음 파일 탐색
 
-			if(now = NULL) // 다음 파일이 더이상 없을 경우
+			if(now == NULL) // 다음 파일이 더이상 없을 경우
 				break;
 		} else if(now->next != NULL) // 다음 탐색할 파일이 존재할 경우(현재 디렉토리의 파일 목록 끝)
 			now = now->next;  // 다음 파일 탐색
@@ -132,11 +132,11 @@ void init_list_status(file_node *head, int status) // 모니터링 파일 상태
 	while(true) {
 		now->status = status;
 
-		if(S_ISDIR(now->attr.st_mode)) { // 디렉토리의 경우
+		if(S_ISDIR(now->attr.st_mode))  // 디렉토리의 경우
 			if(now->child != NULL)  
 				init_list_status(now->child, status); // 디렉토리 하위 파일 모니터링 상태 초기화
 
-		} else if(now->next != NULL)
+		if(now->next != NULL)
 			now = now->next;
 
 		else break;
@@ -152,11 +152,11 @@ void compare_list(file_node *new_list, file_node *old_list) // 파일 목록 트
 	while(true) {	
 		compare_file(new_list, now);
 
-		if(S_ISDIR(now->attr.st_mode)) {
+		if(S_ISDIR(now->attr.st_mode)) 
 			if(now->child != NULL)
 				compare_list(new_list, now->child);
 
-		} else if(now->next != NULL)
+		if(now->next != NULL)
 			now = now->next;
 
 		else break;
@@ -190,6 +190,7 @@ int compare_file(file_node *new_file, file_node *old_file) // 파일 정보 비�
 		else
 			break;
 	}
+	return false;
 }
 		
 int write_change_list(file_node *head, int idx, int status) // 변경사항 목록 작성
@@ -206,22 +207,20 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 				else if(status == DELETE)
 					change_list[idx].time = time(NULL);
 				strcpy(change_list[idx].name, now->name);
-				change_list[idx].status = status;
+				change_list[idx++].status = status;
 				break;
 			case MODIFY:
 				change_list[idx].time = now->attr.st_mtime;
 				strcpy(change_list[idx].name, now->name);
-				change_list[idx].status = MODIFY;
+				change_list[idx++].status = MODIFY;
 				break;
 		}
-		
-		idx++;
 
-		if(S_ISDIR(now->attr.st_mode)) {
+		if(S_ISDIR(now->attr.st_mode))
 			if(now->child != NULL)
 				idx = write_change_list(now->child, idx, status);
 
-		} else if(now->next != NULL)
+		if(now->next != NULL)
 			now = now->next;
 
 		else break;
@@ -244,9 +243,53 @@ void sort_change_list(int idx) // 변경사항 목록 시간순 정렬
 			}
 }
 
-/*
-void write_change_log(int idx)
+
+void write_change_log(int idx) // 변경사항 파일 기록
 {
+	char file_name[BUFFER_SIZE];
+	char time_format[BUFFER_SIZE];
+	struct tm time;
+	FILE *fp;
 	int i;
+	char *tmp;
+
+	if((fp = fopen(LOG, "r+")) < 0) {
+		fprintf(stderr, "fopen error for %s\n", LOG);
+		exit(1);
+	}
+	fseek(fp, 0, SEEK_END); // 오프셋을 로그파일의 끝으로 지정
+
+	for(i = 0; i < idx; i++) {
+
+		tmp = strstr(change_list[i].name, CHECK);
+		tmp += strlen(CHECK) + 1; // strlen("check") + 1(/) 
+		strcpy(file_name, tmp);
+
+		
+		while((tmp = strchr(file_name, '/')) != NULL) // file_name = "파일명_"
+			*tmp = '_';
+
+		
+		time = *localtime(&change_list[i].time);
+		sprintf(time_format, YYMMDD_HHMMSS, 
+				time.tm_year + 1900,
+				time.tm_mon + 1,
+				time.tm_mday,
+				time.tm_hour,
+				time.tm_min,
+				time.tm_sec);
+
+		switch(change_list[i].status) {
+			case CREATE:
+				fprintf(fp, "[%s][%s_%s]\n", time_format, "create", file_name);
+				break;
+			case DELETE:
+				fprintf(fp, "[%s][%s_%s]\n", time_format, "delete", file_name);
+				break;
+			case MODIFY:
+				fprintf(fp, "[%s][%s_%s]\n", time_format, "modify", file_name);
+				break;
+		}
+	}
+	fclose(fp);
 }
-*/
