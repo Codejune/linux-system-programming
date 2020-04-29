@@ -16,11 +16,15 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 		fputs(PROMPT, stdout); // 프롬프트 라인 출력, 20162448> 
 		fgets(command_line, sizeof(command_line), stdin); // 실행 명령 입력
 		strcpy(command_line, ltrim(rtrim(command_line))); // 실행 명령 좌우 공백 지우기
-
 		command = make_command_token(command_line); 
-		printf("token cnt : %d\n", command.cnt);
-		command_type = get_command_type(command.token[0]); // 명령 타입 구분
+		command_type = get_command_type(command.argv[0]); // 명령 타입 구분
 
+		/*
+		if(!check_option(command.argc, command.argv)) {
+			free_command(command);
+			continue;
+		}
+		*/
 		// COMMANDS
 		// DELETE(1)  :
 		// SIZE(2)    :
@@ -30,21 +34,18 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 		// HELP(6)    : 
 		switch(command_type) {
 			case DELETE:
-				printf("삭제다!\n");
 				break;
 			case SIZE:
-				printf("크기다!\n");
 				break;
 			case RECOVER:
-				printf("복구다!\n");
 				break;
 			case TREE:
 				memset(level_check, 0, sizeof(level_check));
 				file_node *head = make_list(check_path);
 				print_list_tree(head, 0, level_check, true);
+				free_list(head);
 				break;
 			case EXIT:
-				printf("종료다!\n");
 				break;
 			case HELP:
 			case UNKNOWN:
@@ -53,6 +54,9 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 			default:
 				continue;
 		}
+		free_command(command);
+		memset(command_line, 0, sizeof(char));
+
 	}
 	fprintf(stdout, "Good bye...\n");
 	fflush(stdout); // 표준 출력 스트림을 비움
@@ -65,40 +69,90 @@ commands make_command_token(char *command_line) // 명령어 전체 문장 토�
 	char *tmp;
 	char *command;
 
-	result.cnt = 0;
+	result.argv = (char **)malloc(sizeof(char*) * BUFFER_SIZE);
+	result.argc = 0;
 
-	//command_line[strlen(command_line) - 1] = '\0'; // 개행 문자 삭제?
-
-	if((command = strtok(command_line, " ")) == NULL) {
-		strcpy(result.token[result.cnt++], command);
+	if((command = strtok(command_line, " ")) == NULL) { // 엔터만 쳤을 경우
+		result.argv[result.argc] = (char *)malloc(sizeof(char));
+		strcpy(result.argv[result.argc], "");
 		return result;
 	}
 
-	to_lower_case(command);
-	strcpy(result.token[result.cnt++], command);
+	to_lower_case(command); // 명령어 소문자화
+	result.argv[result.argc] = (char *)malloc(sizeof(char) * strlen(command)); // 메모리 공간 할당
+	strcpy(result.argv[result.argc++], command); // 토큰 배열에 복사
 
-	while((tmp = strtok(NULL, " ")) != NULL) 
-		strcpy(result.token[result.cnt++], tmp);
+	while((tmp = strtok(NULL, " ")) != NULL) { // 나머지 인자 복사
+		result.argv[result.argc] = (char *)malloc(sizeof(char) * strlen(command)); // 메모리 공간 할당
+		strcpy(result.argv[result.argc++], tmp); // 토큰 배열에 복사
+	}
 
 	return result;
 }
 
+/*
+int check_option(int argc, char *argv[]) // 옵션 인자 검사
+{
+	int c, i;
+	int saved_argc;
+	char **saved_argv;
+
+	saved_argc = argc;
+	saved_argv = (char **)malloc(sizeof(char *)*saved_argc);
+
+	for(i = 0; i < saved_argc; i++)
+	{
+		saved_argv[i] = (char *)malloc(sizeof(char)*BUFFER_SIZE);
+		strcpy(saved_argv[i],argv[i]);
+		printf("argv[%d] : %s\n", i, saved_argv[i]);
+	}
+
+	while((c = getopt(saved_argc, saved_argv, "ird:l")) != -1) {
+		printf("optind : %d\n", optind - 1);
+		   switch(c) {
+		   case 'i':
+		   printf("%c처리\n", c);
+		   break;
+		   case 'r':
+		   printf("%c처리\n", c);
+		   break;
+		   case 'd':
+		   printf("%c처리\n", c);
+		   break;
+		   case 'l':
+		   printf("%c처리 \n", c);
+		   break;
+		   case '?':
+		   printf("모른다!\n");
+		   return false;
+		   }
+	}
+
+	for(i = 0; i < saved_argc; i++) {
+		free(saved_argv[i]);
+	}
+	free(saved_argv);
+
+	return true;
+}
+*/
+
 int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 {
 	// 명령어 타입 확인
-	if(command == NULL)
+	if(!strcmp(command,""))
 		return false;
-	else if(strcmp(command, "delete") == 0)
+	else if(!strcmp(command, "delete"))
 		return DELETE;
-	else if(strcmp(command, "size") == 0)
+	else if(!strcmp(command, "size"))
 		return SIZE;
-	else if(strcmp(command, "recover") == 0)
+	else if(!strcmp(command, "recover"))
 		return RECOVER;
-	else if(strcmp(command, "tree") == 0)
+	else if(!strcmp(command, "tree"))
 		return TREE;
-	else if(strcmp(command, "exit") == 0)
+	else if(!strcmp(command, "exit"))
 		return EXIT;
-	else if(strcmp(command, "help") == 0)
+	else if(!strcmp(command, "help"))
 		return HELP;
 	else
 		return UNKNOWN;
@@ -199,6 +253,17 @@ void to_lower_case(char *str) // 문자열 소문자 변환
 		i++;
 	}
 }
+
+void free_command(commands command) // 명령어 구조체 메모리 할당 해제
+{
+	int i;
+
+	for(i = 0; i < command.argc; i++)
+		free(command.argv[i]);
+
+	free(command.argv);
+}
+
 
 void print_usage(void) // 사용법 출력
 {

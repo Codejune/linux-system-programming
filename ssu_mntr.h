@@ -84,20 +84,22 @@ typedef struct ssu_changeItem {
 } change_file;
 
 typedef struct ssu_commandToken {
-	char token[BUFFER_SIZE][BUFFER_SIZE];
-	int cnt;
+	char **argv;
+	int argc;
 } commands;
 
 
 // ssu_mntr.c
 void ssu_mntr(char *pwd); // 프롬프트 메인 함수
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
+//int check_option(int argc, char *argv[]); // 옵션 인자 검사
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
 void print_list_tree(file_node *head, int level, int level_check[], int is_root); // 모니터링 파일 목록 트리 출력
 void print_indent(int level, int level_check[]); // 트리 출력 보조 함수
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void to_lower_case(char *str); // 문자열 소문자 변환
+void free_command(commands command); // 명령어 구조체 메모리 할당 해제
 void print_usage(void);
 
 // mntr_process.c
@@ -110,3 +112,4 @@ int compare_file(file_node *new_file, file_node *old_file); // 파일 정보 비
 int write_change_list(file_node *head, int idx, int status); // 변경 사항 목록 작성
 void sort_change_list(int idx); // 변경사항 목록 시간순 정렬
 void write_change_log(int idx); // 변경사항 파일 기록
+void free_list(file_node *head); // 모니터링 파일 목록 메모리 할당 해제

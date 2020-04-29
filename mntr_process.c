@@ -44,7 +44,9 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 			printf("change_list[%d] = %d, %s\n", i, change_list[i].status, change_list[i].name);
 
 		write_change_log(change_list_cnt);
-		
+
+		free_list(old_list);
+
 		old_list = new_list;
 		old_list_cnt = new_list_cnt;
 		init_list_status(old_list->child, UNCHCK);
@@ -293,3 +295,19 @@ void write_change_log(int idx) // 변경사항 파일 기록
 	}
 	fclose(fp);
 }
+
+void free_list(file_node *head) // 모니터링 파일 목록 메모리 할당 해제
+{
+	if(head->child != NULL)
+		free_list(head->child);
+
+	if(head->next != NULL)
+		free_list(head->next);
+
+	if(head != NULL) {
+		head->next = NULL;
+		head->child = NULL;
+		free(head);
+	}
+}
+		
