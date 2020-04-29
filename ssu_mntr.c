@@ -122,7 +122,8 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 					level_check[level] = false;
 				}
 			} else  // 같은 레벨의 파일들이 더 존재하지 않을 경우
-				print_list_tree(now->child, level + 1, level_check, is_root);
+				if(now->child != NULL) 
+					print_list_tree(now->child, level + 1, level_check, is_root);
 		}
 
 		if(now->next != NULL)
