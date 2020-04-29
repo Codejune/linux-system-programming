@@ -4,12 +4,12 @@ change_file change_list[MAX_BUFFER_SIZE]; // 변경 목록
 
 void mntr_process(char *pwd) // 모니터링 메인 함수
 {
+	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
 	FILE *fp; // log.txt 파일 구조체
 	int old_list_cnt, new_list_cnt; // 모니터링 디렉토리 파일 개수(기존, 신규)
 	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
 	int is_first = true;
 	int change_list_cnt;
-	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
 
 	if(access(CHECK, F_OK) < 0) // 모니터링 디렉토리 확인
 			mkdir(CHECK, 0755); // 존재하지 않을 경우 생성
