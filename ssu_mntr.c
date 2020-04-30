@@ -1,18 +1,33 @@
 #include "ssu_mntr.h"
 
-int option_i;
-int option_r;
-int option_d;
-int option_l;
+int option_i = false;
+int option_r = false;
+int option_d = false;
+int option_l = false;
 
 void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 {
+	// 프롬프트
 	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
-	char target_path[BUFFER_SIZE];
 	char command_line[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
+
+	// 명령어
 	commands command;
 	int command_type = false; // 실행 명령 타입
+	char target_path[BUFFER_SIZE]; // FINE_NAME 경로
+	int argv_idx = 0;
+
+	// DELETE
+
+	// SIZE
+	int number;
+
+	// RECOVER
+
+	// TREE
 	int level_check[BUFFER_SIZE];
+
+	file_node *head;
 
 	sprintf(check_path, "%s/%s", pwd, CHECK);
 
@@ -39,40 +54,89 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 		// HELP(6)    : 
 		switch(command_type) {
 			case DELETE:
+				/*
 				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // FILE_NAME이 주어지지 않은 경우
 					fprintf(stderr, "%s: <FILE_NAME> doesn't exist\n", command.argv[0]);
 					continue;
 				}
 
-				strcpy(target_path, command.argv[1]); // FILE_NAME 추출
+
 				chdir(check_path); // 모니터링 디렉토리 이동
 
-				if(access(target_path, F_OK) < 0) // 파일이 존재하지 않을 경우
+				if(access(command.argv[1], F_OK) < 0) // 파일이 존재하지 않을 경우
 					fprintf(stderr, "access error for %s\n", target_path);
+					
 
 				realpath(command.argv[1], target_path);
 				printf("target_path: %s\n", target_path);
+				*/
+				break;
 
-				break;
 			case SIZE:
+
+				number = 1;
+
+				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // FILE_NAME이 주어지지 않은 경우
+					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
+					continue;
+				}
+
+				if(access(command.argv[1], F_OK) < 0){ // 파일이 존재하지 않을 경우
+					fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[1]);
+					continue;
+				}
+
+				if(!strcmp(command.argv[2], "-d")) {
+					if(command.argc < 4) {
+						fprintf(stderr, "%s: NUMBER doesn't exist\n", command.argv[0]);
+						continue;
+					}
+
+					else if((number = atoi(command.argv[3])) == 0) {
+						fprintf(stderr, "%s: invalid input NUMBER\n", command.argv[0]);
+						continue;
+					}
+
+					option_d = true;
+				} else {
+					fprintf(stderr, "%s: invalid input OPTION\n", command.argv[0]);
+					continue;
+				}
+
+				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변환 
+
+				head = make_list(target_path); // 해당 경로의 파일 목록 구조체 생성
+				printf("target_path:%s\nnumber:%d\n", target_path, number);
+				print_list_size(head, target_path, number);
+
+				free_list(head);
 				break;
+
 			case RECOVER:
 				break;
+
 			case TREE:
 				memset(level_check, 0, sizeof(level_check));
-				file_node *head = make_list(check_path);
+				head = make_list(check_path);
 				print_list_tree(head, 0, level_check, true);
 				free_list(head);
 				break;
+
 			case EXIT:
 				break;
+
 			case HELP:
 			case UNKNOWN:
 				print_usage();
 				break;
+
 			default:
 				continue;
 		}
+
+		init_option();
+		memset(target_path, 0, sizeof(char));
+
 		//free_command(command);
 		//memset(command_line, 0, sizeof(char));
 
@@ -109,53 +173,6 @@ commands make_command_token(char *command_line) // 명령어 전체 문장 토�
 	return result;
 }
 
-/*
-int check_option(int argc, char *argv[]) // 옵션 인자 검사
-{
-	int c, i;
-	int saved_argc;
-	char **saved_argv;
-
-	saved_argc = argc;
-	saved_argv = (char **)malloc(sizeof(char *)*saved_argc);
-
-	for(i = 0; i < saved_argc; i++)
-	{
-		saved_argv[i] = (char *)malloc(sizeof(char)*BUFFER_SIZE);
-		strcpy(saved_argv[i],argv[i]);
-		printf("argv[%d] : %s\n", i, saved_argv[i]);
-	}
-
-	while((c = getopt(saved_argc, saved_argv, "ird:l")) != -1) {
-		printf("optind : %d\n", optind - 1);
-		   switch(c) {
-		   case 'i':
-		   printf("%c처리\n", c);
-		   break;
-		   case 'r':
-		   printf("%c처리\n", c);
-		   break;
-		   case 'd':
-		   printf("%c처리\n", c);
-		   break;
-		   case 'l':
-		   printf("%c처리 \n", c);
-		   break;
-		   case '?':
-		   printf("모른다!\n");
-		   return false;
-		   }
-	}
-
-	for(i = 0; i < saved_argc; i++) {
-		free(saved_argv[i]);
-	}
-	free(saved_argv);
-
-	return true;
-}
-*/
-
 int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 {
 	// 명령어 타입 확인
@@ -175,6 +192,41 @@ int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 		return HELP;
 	else
 		return UNKNOWN;
+}
+
+void print_list_size(file_node *head, char *path, int number) // 지정 파일 상대 경로 및 크기 출력
+{
+	char pwd[BUFFER_SIZE];
+	char *relative_path;
+
+	file_node *now;
+
+	now = head;
+	getcwd(pwd, BUFFER_SIZE);
+
+	while(number != 0) {
+
+		relative_path = now->name + strlen(pwd); // 상대 경로 추출
+		
+		if(option_d) {
+				printf("%-10ld.%-s\n", now->attr.st_size, relative_path);
+				if(!S_ISDIR(now->attr.st_mode)) 
+					if(number > 1 && now->next == NULL)
+						break;
+		} else {
+			if(!strcmp(now->name, path)) // 경로 비교
+				printf("%-10ld.%-s\n", now->attr.st_size, relative_path);
+		}
+
+		if(S_ISDIR(now->attr.st_mode)) // 디렉토리의 경우
+			if(now->child != NULL) // 하위 디렉토리 파일들이 존재하면 
+				print_list_size(now->child, path, number - 1); // 하위 디렉토리 파일 출력 
+
+		if(now->next != NULL) // 같은 레벨에 파일들이 더 존재할 경우
+			now = now->next;
+		else
+			break; // 팀섹 종료
+	}
 }
 
 void print_list_tree(file_node *head, int level, int level_check[], int is_root) // 모니터링 파일 목록 트리 출력
@@ -205,6 +257,7 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 		else
 			printf("└──%s\n", file_name);
 
+		
 		if(S_ISDIR(now->attr.st_mode)) { // 같은 레벨의 파일이 디렉토리일 경우
 			if(now->next != NULL) { // 같은 레벨의 파일들이 더 존재할 경우
 				if(now->child != NULL) {

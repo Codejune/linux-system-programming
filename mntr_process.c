@@ -50,7 +50,7 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 		old_list = new_list;
 		old_list_cnt = new_list_cnt;
 		init_list_status(old_list->child, UNCHCK);
-		sleep(3);
+		sleep(5);
 	}
 }
 
