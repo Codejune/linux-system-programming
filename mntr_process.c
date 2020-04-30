@@ -1,8 +1,9 @@
 #include "ssu_mntr.h"
 
+char pwd[BUFFER_SIZE];
 change_file change_list[MAX_BUFFER_SIZE]; // 변경 목록
 
-void mntr_process(char *pwd) // 모니터링 메인 함수
+void mntr_process(void) // 모니터링 메인 함수
 {
 	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
 	FILE *fp; // log.txt 파일 구조체
@@ -10,6 +11,9 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
 	int is_first = true;
 	int change_list_cnt;
+
+	getcwd(pwd, BUFFER_SIZE);
+	sprintf(check_path, "%s/%s", pwd, CHECK);
 
 	if(access(CHECK, F_OK) < 0) // 모니터링 디렉토리 확인
 			mkdir(CHECK, DIR_ACCESS_MODE); // 존재하지 않을 경우 생성
@@ -19,8 +23,6 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 			exit(1);
 	}
 	fclose(fp);
-
-	sprintf(check_path, "%s/%s", pwd, CHECK);
 
 	while(true) {  
 		new_list = make_list(check_path); // 현재 파일 목록 및 상태 저장

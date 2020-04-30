@@ -95,11 +95,11 @@ typedef struct ssu_commandToken {
 
 
 // ssu_mntr.c
-void ssu_mntr(char *pwd); // 프롬프트 메인 함수
+void ssu_mntr(void); // 프롬프트 메인 함수
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
 void remove_directory(char *path); // 디렉토리 삭제
-void print_list_size(file_node *head, char *path, int number); // 지정 파일 상대 경로 및 크기 출력
+void print_list_size(file_node *head, char *path, int number, int op_switch); // 지정 파일 상대 경로 및 크기 출력
 void print_list_tree(file_node *head, int level, int level_check[], int is_root); // 모니터링 파일 목록 트리 출력
 void print_indent(int level, int level_check[]); // 트리 출력 보조 함수
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
@@ -109,7 +109,7 @@ void init_option(void); // 옵션 확인 초기화
 void print_usage(void);
 
 // mntr_process.c
-void mntr_process(char *pwd); // 모니터링 메인 함수
+void mntr_process(void); // 모니터링 메인 함수
 file_node* make_list(char *path); // 디렉토리 파일 목록 트리화
 int count_file(file_node *head); // 주어진 목록 파일 개수
 void init_list_status(file_node *head, int status); // 모니터링 파일 상태 초기화 

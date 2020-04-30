@@ -1,11 +1,12 @@
 #include "ssu_mntr.h"
 
+char pwd[BUFFER_SIZE];
 int option_i = false;
 int option_r = false;
 int option_d = false;
 int option_l = false;
 
-void ssu_mntr(char *pwd) // 프롬프트 메인 함수
+void ssu_mntr(void) // 프롬프트 메인 함수
 {
 	// 프롬프트
 	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
@@ -15,10 +16,10 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 	commands command;
 	int command_type = false; // 실행 명령 타입
 	char target_path[BUFFER_SIZE]; // FINE_NAME 경로
-	int argv_idx = 0;
 
 	// 공통
 	file_node *head;
+	int idx;
 
 	// DELETE
 
@@ -30,6 +31,7 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 	// TREE
 	int level_check[BUFFER_SIZE];
 
+	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK); // 모니터링 디렉토리 경로 추출
 
 	while (command_type != EXIT) {
@@ -60,16 +62,16 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 					fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[1]);
 					continue;
 				}
-				
+
 				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변경
 
 				head = make_list(check_path);
 				/*
-				if((head = is_file_exist(head, target_path)) == NULL) { // 해당 파일 탐색, 존재시 해당 노드, 존재하지 않으면 NULL
-					fprintf(stderr, "%s: %s doesn't exist", command.argv[1]);
-					continue;
-				}
-				*/
+				   if((head = is_file_exist(head, target_path)) == NULL) { // 해당 파일 탐색, 존재시 해당 노드, 존재하지 않으면 NULL
+				   fprintf(stderr, "%s: %s doesn't exist", command.argv[1]);
+				   continue;
+				   }
+				 */
 
 
 
@@ -77,7 +79,7 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 
 			case SIZE:
 
-				number = 1;
+				number = true;
 
 				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // FILE_NAME이 주어지지 않은 경우
 					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
@@ -111,7 +113,9 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변환 
 
 				head = make_list(target_path); // 해당 경로의 파일 목록 구조체 생성
-				print_list_size(head, target_path, number); // 출력
+				print_list_size(head, target_path, number, true); // 출력
+				free_list(head);
+
 				break;
 
 			case RECOVER:
@@ -123,7 +127,7 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 
 				head = make_list(check_path); // 모니터링 디렉토리 파일 목록 구조체 생성
 				print_list_tree(head, 0, level_check, true); // 출력 
-				free_list(head); // 메모리 할당 해제
+				//free_list(head); // 메모리 할당 해제
 				break;
 
 			case EXIT:
@@ -203,7 +207,7 @@ void remove_directory(char *path) // 디렉토리 삭제
 	struct dirent *dirp;
 	struct stat statbuf;
 	DIR *dp;
-	char tmp[BUFFER_SIZE];
+	char tmp[MAX_BUFFER_SIZE];
 
 	if((dp = opendir(path)) == NULL)
 		return;
@@ -227,41 +231,33 @@ void remove_directory(char *path) // 디렉토리 삭제
 	remove_directory(path);
 }
 
-void print_list_size(file_node *head, char *path, int number) // 지정 파일 상대 경로 및 크기 출력
+void print_list_size(file_node *head, char *path, int number, int op_switch) // 지정 파일 상대 경로 및 크기 출력
 {
-	char pwd[BUFFER_SIZE];
 	char *relative_path;
-
 	file_node *now;
 
 	now = head;
-	getcwd(pwd, BUFFER_SIZE);
 
-	while(number != 0) {
+	while(number > 0) {
 
 		relative_path = now->name + strlen(pwd); // 상대 경로 추출
+		printf("%-10ld.%-s\n", now->attr.st_size, relative_path); // 출력
 
-		if(option_d) {
-			printf("%-10ld.%-s\n", now->attr.st_size, relative_path);
-
-			if(!S_ISDIR(now->attr.st_mode)) 
-				if(!strcmp(now->name, path) && number > 1 && now->next == NULL)
-					break;
-		} else {
-			if(!strcmp(now->name, path)) { // 경로 비교
-				printf("%-10ld.%-s\n", now->attr.st_size, relative_path);
-				break;
-			}
+		if(op_switch) {
+			if(option_d) { // 옵션이 주어졌을 경우
+				if(!S_ISDIR(now->attr.st_mode))  // 파일인 경우
+					break; // 탐색 종료
+			} else break; // 옵션이 주어지지 않은 경우
 		}
 
-		if(S_ISDIR(now->attr.st_mode)) // 디렉토리의 경우
-			if(now->child != NULL) // 하위 디렉토리 파일들이 존재하면 
-				print_list_size(now->child, path, number - 1); // 하위 디렉토리 파일 출력 
+		op_switch = false;
+
+		if(now->child != NULL) // 하위 디렉토리 파일들이 존재하면 
+			print_list_size(now->child, path, number - 1, op_switch); // 하위 디렉토리 파일 출력 
 
 		if(now->next != NULL) // 같은 레벨에 파일들이 더 존재할 경우
 			now = now->next;
-		else
-			break; // 팀섹 종료
+		else break; // 탐색 종료
 	}
 }
 
