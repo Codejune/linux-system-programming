@@ -12,7 +12,7 @@ void mntr_process(char *pwd) // 모니터링 메인 함수
 	int change_list_cnt;
 
 	if(access(CHECK, F_OK) < 0) // 모니터링 디렉토리 확인
-			mkdir(CHECK, 0755); // 존재하지 않을 경우 생성
+			mkdir(CHECK, DIR_ACCESS_MODE); // 존재하지 않을 경우 생성
 
 	if((fp = fopen(LOG, "w+")) == NULL) { // 로그 파일 열기 및 생성, 기존 로그 덮어쓰기
 			fprintf(stderr, "fopen error for log.txt\n");

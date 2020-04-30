@@ -1,9 +1,14 @@
 #include "ssu_mntr.h"
 
+int option_i;
+int option_r;
+int option_d;
+int option_l;
 
 void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 {
 	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
+	char target_path[BUFFER_SIZE];
 	char command_line[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
 	commands command;
 	int command_type = false; // 실행 명령 타입
@@ -21,10 +26,10 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 
 		/*
 		if(!check_option(command.argc, command.argv)) {
-			free_command(command);
+			//free_command(command);
 			continue;
-		}
-		*/
+		}*/
+		
 		// COMMANDS
 		// DELETE(1)  :
 		// SIZE(2)    :
@@ -34,6 +39,20 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 		// HELP(6)    : 
 		switch(command_type) {
 			case DELETE:
+				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // FILE_NAME이 주어지지 않은 경우
+					fprintf(stderr, "%s: <FILE_NAME> doesn't exist\n", command.argv[0]);
+					continue;
+				}
+
+				strcpy(target_path, command.argv[1]); // FILE_NAME 추출
+				chdir(check_path); // 모니터링 디렉토리 이동
+
+				if(access(target_path, F_OK) < 0) // 파일이 존재하지 않을 경우
+					fprintf(stderr, "access error for %s\n", target_path);
+
+				realpath(command.argv[1], target_path);
+				printf("target_path: %s\n", target_path);
+
 				break;
 			case SIZE:
 				break;
@@ -54,8 +73,8 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 			default:
 				continue;
 		}
-		free_command(command);
-		memset(command_line, 0, sizeof(char));
+		//free_command(command);
+		//memset(command_line, 0, sizeof(char));
 
 	}
 	fprintf(stdout, "Good bye...\n");
@@ -254,16 +273,13 @@ void to_lower_case(char *str) // 문자열 소문자 변환
 	}
 }
 
-void free_command(commands command) // 명령어 구조체 메모리 할당 해제
+void init_option(void) // 옵션 확인 초기화
 {
-	int i;
-
-	for(i = 0; i < command.argc; i++)
-		free(command.argv[i]);
-
-	free(command.argv);
+	option_i = false;
+	option_r = false;
+	option_d = false;
+	option_l = false;
 }
-
 
 void print_usage(void) // 사용법 출력
 {

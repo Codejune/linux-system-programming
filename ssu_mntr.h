@@ -66,7 +66,12 @@
 
 // 형식
 #define YYMMDD_HHMMSS "%.4d-%.2d-%.2d %.2d:%.2d:%.2d"
-#define PROMPT "20162448>"
+#define YYMMDD        "%.4d-%.2d-%.2d"
+#define HHSS          "%.2d:%.2d"
+#define PROMPT        "20162448>"
+
+// 권한
+#define DIR_ACCESS_MODE 0755
 
 typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 	char name[BUFFER_SIZE]; // 파일 이름
@@ -84,8 +89,8 @@ typedef struct ssu_changeItem {
 } change_file;
 
 typedef struct ssu_commandToken {
-	char **argv;
-	int argc;
+	char **argv; // 명령행 토큰
+	int argc; // 명령행 인자 개수
 } commands;
 
 
@@ -99,7 +104,7 @@ void print_indent(int level, int level_check[]); // 트리 출력 보조 함수
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void to_lower_case(char *str); // 문자열 소문자 변환
-void free_command(commands command); // 명령어 구조체 메모리 할당 해제
+void init_option(void); // 옵션 확인 초기화
 void print_usage(void);
 
 // mntr_process.c
