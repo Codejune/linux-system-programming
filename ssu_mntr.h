@@ -97,8 +97,8 @@ typedef struct ssu_commandToken {
 // ssu_mntr.c
 void ssu_mntr(char *pwd); // 프롬프트 메인 함수
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
-//int check_option(int argc, char *argv[]); // 옵션 인자 검사
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
+void remove_directory(char *path); // 디렉토리 삭제
 void print_list_size(file_node *head, char *path, int number); // 지정 파일 상대 경로 및 크기 출력
 void print_list_tree(file_node *head, int level, int level_check[], int is_root); // 모니터링 파일 목록 트리 출력
 void print_indent(int level, int level_check[]); // 트리 출력 보조 함수

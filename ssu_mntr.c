@@ -63,6 +63,16 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 				
 				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변경
 
+				head = make_list(check_path);
+				/*
+				if((head = is_file_exist(head, target_path)) == NULL) { // 해당 파일 탐색, 존재시 해당 노드, 존재하지 않으면 NULL
+					fprintf(stderr, "%s: %s doesn't exist", command.argv[1]);
+					continue;
+				}
+				*/
+
+
+
 				break;
 
 			case SIZE:
@@ -185,6 +195,36 @@ int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 		return HELP;
 	else
 		return UNKNOWN;
+}
+
+void remove_directory(char *path) // 디렉토리 삭제
+{
+	// trash와 info에 저장하는 코드 작성 필요!
+	struct dirent *dirp;
+	struct stat statbuf;
+	DIR *dp;
+	char tmp[BUFFER_SIZE];
+
+	if((dp = opendir(path)) == NULL)
+		return;
+
+	while((dirp = readdir(dp)) != NULL) { // path에 존재하는 디렉토리 안에 파일들 전부 삭제
+		if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, ".."))
+			continue;
+
+		sprintf(tmp, "%s/%s", path, dirp->d_name); // tmp = 디렉토리 내부 파일
+
+		if(lstat(tmp, &statbuf) == -1) // 파일 상태 정보 추출
+			continue;
+
+		if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우 재귀적으로 제거
+			remove_directory(tmp);
+		else
+			unlink(tmp);
+	}
+
+	closedir(dp);
+	remove_directory(path);
 }
 
 void print_list_size(file_node *head, char *path, int number) // 지정 파일 상대 경로 및 크기 출력
