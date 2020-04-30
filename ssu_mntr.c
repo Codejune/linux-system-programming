@@ -110,7 +110,6 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 				head = make_list(target_path); // 해당 경로의 파일 목록 구조체 생성
 				print_list_size(head, target_path, number);
 
-				free_list(head);
 				break;
 
 			case RECOVER:
@@ -136,9 +135,7 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 		}
 
 		init_option();
-		memset(target_path, 0, sizeof(char));
-
-		//free_command(command);
+		//memset(target_path, 0, sizeof(char));
 		//memset(command_line, 0, sizeof(char));
 
 	}
@@ -211,12 +208,15 @@ void print_list_size(file_node *head, char *path, int number) // 지정 파일 �
 
 		if(option_d) {
 			printf("%-10ld.%-s\n", now->attr.st_size, relative_path);
+
 			if(!S_ISDIR(now->attr.st_mode)) 
-				if(number > 1 && now->next == NULL)
+				if(!strcmp(now->name, path) && number > 1 && now->next == NULL)
 					break;
 		} else {
-			if(!strcmp(now->name, path)) // 경로 비교
+			if(!strcmp(now->name, path)) { // 경로 비교
 				printf("%-10ld.%-s\n", now->attr.st_size, relative_path);
+				break;
+			}
 		}
 
 		if(S_ISDIR(now->attr.st_mode)) // 디렉토리의 경우
