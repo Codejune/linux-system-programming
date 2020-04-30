@@ -17,6 +17,9 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 	char target_path[BUFFER_SIZE]; // FINE_NAME 경로
 	int argv_idx = 0;
 
+	// 공통
+	file_node *head;
+
 	// DELETE
 
 	// SIZE
@@ -27,9 +30,7 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 	// TREE
 	int level_check[BUFFER_SIZE];
 
-	file_node *head;
-
-	sprintf(check_path, "%s/%s", pwd, CHECK);
+	sprintf(check_path, "%s/%s", pwd, CHECK); // 모니터링 디렉토리 경로 추출
 
 	while (command_type != EXIT) {
 
@@ -39,37 +40,29 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 		command = make_command_token(command_line); 
 		command_type = get_command_type(command.argv[0]); // 명령 타입 구분
 
-		/*
-		   if(!check_option(command.argc, command.argv)) {
-		//free_command(command);
-		continue;
-		}*/
-
 		// COMMANDS
-		// DELETE(1)  :
-		// SIZE(2)    :
-		// RECOVER(3) : 
-		// TREE(4)    :
-		// EXIT(5)    :
-		// HELP(6)    : 
+		// DELETE(1)  : DELETE  <FILENAME> <END_TIME> [OPTION]
+		// SIZE(2)    : SIZE    <FILENAME> [OPTION]
+		// RECOVER(3) : RECOVER <FILENAME> [OPTION]
+		// TREE(4)    : TREE
+		// EXIT(5)    : EXKT
+		// HELP(6)    : HELP
+
 		switch(command_type) {
 			case DELETE:
-				/*
-				   if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // FILE_NAME이 주어지지 않은 경우
-				   fprintf(stderr, "%s: <FILE_NAME> doesn't exist\n", command.argv[0]);
-				   continue;
-				   }
 
+				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // 인자 개수가 부족할 경우
+					fprintf(stderr, "%s: FILE_NAME doesn't exist", command.argv[0]);
+					continue;
+				}
 
-				   chdir(check_path); // 모니터링 디렉토리 이동
+				if(access(command.argv[1], F_OK) < 0) { // 파일이 존재하지 않을 경우
+					fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[1]);
+					continue;
+				}
+				
+				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변경
 
-				   if(access(command.argv[1], F_OK) < 0) // 파일이 존재하지 않을 경우
-				   fprintf(stderr, "access error for %s\n", target_path);
-
-
-				   realpath(command.argv[1], target_path);
-				   printf("target_path: %s\n", target_path);
-				   */
 				break;
 
 			case SIZE:
@@ -81,25 +74,25 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 					continue;
 				}
 
-				if(access(command.argv[1], F_OK) < 0){ // 파일이 존재하지 않을 경우
+				if(access(command.argv[1], F_OK) < 0) { // 파일이 존재하지 않을 경우
 					fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[1]);
 					continue;
 				}
 
-				if(command.argc > 2) {
-					if(!strcmp(command.argv[2], "-d")) {
-						if(command.argc < 4) {
+				if(command.argc > 2) { // 인자가 2개 이상일 경우
+					if(!strcmp(command.argv[2], "-d")) { // -d 옵션이 존재하는 경우
+
+						if(command.argc < 4) { // -d 옵션이 존재하고 인자의 개수가 부족한 경우
 							fprintf(stderr, "%s: NUMBER doesn't exist\n", command.argv[0]);
 							continue;
-						}
-
-						else if((number = atoi(command.argv[3])) == 0) {
+						} else if((number = atoi(command.argv[3])) == 0) { // -d옵션이 존재하고 NUMBER가 올바르지 않은 경우
 							fprintf(stderr, "%s: invalid input NUMBER\n", command.argv[0]);
 							continue;
 						}
 
-						option_d = true;
-					} else {
+						option_d = true; // -d 옵션 확인
+
+					} else { // 인자가 제대로 주어지지 않은 경우
 						fprintf(stderr, "%s: invalid input OPTION\n", command.argv[0]);
 						continue;
 					}
@@ -108,18 +101,19 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변환 
 
 				head = make_list(target_path); // 해당 경로의 파일 목록 구조체 생성
-				print_list_size(head, target_path, number);
-
+				print_list_size(head, target_path, number); // 출력
 				break;
 
 			case RECOVER:
 				break;
 
 			case TREE:
+
 				memset(level_check, 0, sizeof(level_check));
-				head = make_list(check_path);
-				print_list_tree(head, 0, level_check, true);
-				free_list(head);
+
+				head = make_list(check_path); // 모니터링 디렉토리 파일 목록 구조체 생성
+				print_list_tree(head, 0, level_check, true); // 출력 
+				free_list(head); // 메모리 할당 해제
 				break;
 
 			case EXIT:
@@ -127,6 +121,7 @@ void ssu_mntr(char *pwd) // 프롬프트 메인 함수
 
 			case HELP:
 			case UNKNOWN:
+
 				print_usage();
 				break;
 
