@@ -264,15 +264,16 @@ void print_list_size(file_node *head, char *path, int number, int op_switch) // 
 void print_list_tree(file_node *head, int level, int level_check[], int is_root) // 모니터링 파일 목록 트리 출력
 {
 	file_node *now;
-	char *file_name;
+	char file_name[BUFFER_SIZE];
 	char *tmp;
 
 	now = head;
 
 	while(true) {
-		file_name = strtok(now->name, "/"); // 파일명 추출
-		while((tmp = strtok(NULL, "/")) != NULL)
+		strcpy(file_name, strtok(now->name, "/")); // 파일명 추출
+		while((tmp = strtok(NULL, "/")) != NULL) {
 			strcpy(file_name, tmp);
+		}
 
 		if(is_root) { // 루트 디렉토리 노드일 경우 디렉토리 이름만 출력 후 하위 파일 노드로 이동
 			printf("%s\n", file_name); // 파일명 출력
