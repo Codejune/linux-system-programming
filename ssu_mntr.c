@@ -22,6 +22,7 @@ void ssu_mntr(void) // 프롬프트 메인 함수
 	int idx;
 
 	// DELETE
+	struct tm time;
 
 	// SIZE
 	int number;
@@ -65,17 +66,30 @@ void ssu_mntr(void) // 프롬프트 메인 함수
 
 				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변경
 
-				head = make_list(target_path);
-				move_trash(head);
+				if(strstr(target_path, check_path) == NULL) { // FILE_NAME이 모니터링 디렉토리에 존재하지 않을 경우
+					fprintf(stderr, "%s: %s doesn't exist in %s\n", command.argv[0], command.argv[1], check_path);
+					continue;
+				}
 
-				/*
-				   if((head = is_file_exist(head, target_path)) == NULL) { // 해당 파일 탐색, 존재시 해당 노드, 존재하지 않으면 NULL
-				   fprintf(stderr, "%s: %s doesn't exist", command.argv[1]);
-				   continue;
-				   }
-				   */
+				for(idx = 0; idx < command.argc; idx++) { // 옵션 확인
+					if(!strcmp(command.argv[idx], "-i")) // -i 옵션
+						option_i = true;
+					else if(!strcmp(command.argv[idx], "-r")) // -r
+						option_r = true;
+				}
+
+				if(command.argc > 3) { // END_TIME이 주어질 경우
+					if(command.argv[2][0] == '-' || command.argv[3][0] == '-') {
+						fprintf(stderr, "%s: invalid input END_TIME\n", command.argv[0]);
+						continue;
+					}
+				}
 
 
+				head = make_list(target_path); // 파일 목록 구조체 생성
+
+				if(!move_trash(head))
+					break;
 
 				break;
 
@@ -263,10 +277,28 @@ int move_trash(file_node *head) // 파일을 휴지통 이동
 	printf("%s\n", target_path);
 	rename(head->name, target_path); // 이동
 	return true;
-
 }
-/*
-int move_directory_trash(file_node *head) // 디렉토리를 휴지통 이동
+
+struct tm get_tm(char *date, char *time) // 시간 구조체 획득
+{
+	struct tm tmp;
+	int year, month, day;
+	int hour, min;
+
+	sscanf(date, "%d:%d:%d", &year, &month, &day);
+	sscanf(time, "%d:%d", &hour, &min);
+
+	tmp.tm_year = year - 1900;
+	tmp.tm_mon = month - 1;
+	tmp.tm_mday = day;
+	tmp.tm_hour = hour;
+	tmp.tm_min = min;
+	tmp.tm_sec = -1;
+
+	return tmp;
+}
+
+void remove_directory(const char *path) // 디렉토리 삭제
 {
 	// trash와 info에 저장하는 코드 작성 필요!
 	file_node *now;
@@ -275,31 +307,27 @@ int move_directory_trash(file_node *head) // 디렉토리를 휴지통 이동
 	DIR *dp;
 	char tmp[MAX_BUFFER_SIZE];
 
-	now = head;
-	return true;
-	
-	   if((dp = opendir(now->name)) == NULL)
-	   return;
+	if((dp = opendir(path)) == NULL)
+		return;
 
-	   while((dirp = readdir(dp)) != NULL) { // path에 존재하는 디렉토리 안에 파일들 전부 삭제
-	   if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, ".."))
-	   continue;
+	while((dirp = readdir(dp)) != NULL) { // path에 존재하는 디렉토리 안에 파일들 전부 삭제
+		if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, ".."))
+			continue;
 
-	   sprintf(tmp, "%s/%s", path, dirp->d_name); // tmp = 디렉토리 내부 파일
+		sprintf(tmp, "%s/%s", path, dirp->d_name); // tmp = 디렉토리 내부 파일
 
-	   if(lstat(tmp, &statbuf) == -1) // 파일 상태 정보 추출
-	   continue;
+		if(lstat(tmp, &statbuf) == -1) // 파일 상태 정보 추출
+			continue;
 
-	   if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우 재귀적으로 제거
-	   move_directory_trash(tmp);
-	   else 
-	   unlink(tmp); // rename함수 사용할 것
-	   }
+		if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우 재귀적으로 제거
+			remove_directory(tmp);
+		else 
+			unlink(tmp); // rename함수 사용할 것
+	}
 
-	   closedir(dp);
-	   
+	closedir(dp);
 }
-*/
+
 
 void print_list_size(file_node *head, char *path, int number, int op_switch) // 지정 파일 상대 경로 및 크기 출력
 {
