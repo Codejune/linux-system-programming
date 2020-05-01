@@ -66,7 +66,7 @@ void ssu_mntr(void) // 프롬프트 메인 함수
 				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변경
 
 				head = make_list(target_path);
-				move_file_trash(head);
+				move_trash(head);
 
 				/*
 				   if((head = is_file_exist(head, target_path)) == NULL) { // 해당 파일 탐색, 존재시 해당 노드, 존재하지 않으면 NULL
@@ -213,7 +213,7 @@ char *get_file_name(char *path) // 파일명 추출
 }
 
 
-int move_file_trash(file_node *head) // 파일을 휴지통 이동
+int move_trash(file_node *head) // 파일을 휴지통 이동
 {
 	FILE *fp;
 	char *file_name;
@@ -226,6 +226,7 @@ int move_file_trash(file_node *head) // 파일을 휴지통 이동
 
 	sprintf(trash_files_path, "%s/%s", pwd, TRASH_FILES);
 	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
+	strcpy(target_path, head->name);
 
 	if(access(TRASH, F_OK) < 0) // 휴지통 디렉토리가 존재하지 않을 경우
 		mkdir(TRASH, DIR_MODE);
@@ -236,38 +237,35 @@ int move_file_trash(file_node *head) // 파일을 휴지통 이동
 	if(access(TRASH_INFO, F_OK) < 0) // 삭제 파일 정보 디렉토리가 존재하지 않을 경우
 		mkdir(TRASH_INFO, DIR_MODE);
 
-	if(S_ISDIR(head->attr.st_mode)) // 삭제할 파일이 디렉토리인 경우
-		move_directory_trash(head);
-	else {
-		file_name = get_file_name(head->name); // 파일 이름 추출
+	file_name = get_file_name(target_path); // 파일 이름 추출
 
-		// 파일 정보 생성
-		sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
-		printf("%s\n", target_path);
-		if((fp = fopen(target_path, "w+")) < 0) {
-			fprintf(stderr, "fopen error for %s\n", target_path);
-			return false;
-		}
-
-		time(&cur_time);
-		time_info = *localtime(&cur_time);
-		time_format = make_time_format(time_info);
-		fprintf(fp, "[Trash info]\n%s\nD : %s\n", target_path, time_format);
-		
-		time_info = *localtime(&(head->attr.st_mtime));
-		time_format = make_time_format(time_info);
-		fprintf(fp, "M : %s\n", time_format);
-		fclose(fp);
-
-
-		// 파일 원본 이동
-		//sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
-		//rename(head->name, target_path); // 이동
-		
+	// 파일 정보 생성
+	sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
+	printf("%s\n", target_path);
+	if((fp = fopen(target_path, "w+")) < 0) {
+		fprintf(stderr, "fopen error for %s\n", target_path);
+		return false;
 	}
-	return true;
-}
 
+	time(&cur_time);
+	time_info = *localtime(&cur_time);
+	time_format = make_time_format(time_info);
+	fprintf(fp, "[Trash info]\n%s\nD : %s\n", head->name, time_format);
+
+	time_info = *localtime(&(head->attr.st_mtime));
+	time_format = make_time_format(time_info);
+	fprintf(fp, "M : %s\n", time_format);
+	fclose(fp);
+
+
+	// 파일 원본 이동
+	sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
+	printf("%s\n", target_path);
+	rename(head->name, target_path); // 이동
+	return true;
+
+}
+/*
 int move_directory_trash(file_node *head) // 디렉토리를 휴지통 이동
 {
 	// trash와 info에 저장하는 코드 작성 필요!
@@ -279,28 +277,29 @@ int move_directory_trash(file_node *head) // 디렉토리를 휴지통 이동
 
 	now = head;
 	return true;
-/*
-	if((dp = opendir(now->name)) == NULL)
-		return;
+	
+	   if((dp = opendir(now->name)) == NULL)
+	   return;
 
-	while((dirp = readdir(dp)) != NULL) { // path에 존재하는 디렉토리 안에 파일들 전부 삭제
-		if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, ".."))
-			continue;
+	   while((dirp = readdir(dp)) != NULL) { // path에 존재하는 디렉토리 안에 파일들 전부 삭제
+	   if(!strcmp(dirp->d_name, ".") || !strcmp(dirp->d_name, ".."))
+	   continue;
 
-		sprintf(tmp, "%s/%s", path, dirp->d_name); // tmp = 디렉토리 내부 파일
+	   sprintf(tmp, "%s/%s", path, dirp->d_name); // tmp = 디렉토리 내부 파일
 
-		if(lstat(tmp, &statbuf) == -1) // 파일 상태 정보 추출
-			continue;
+	   if(lstat(tmp, &statbuf) == -1) // 파일 상태 정보 추출
+	   continue;
 
-		if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우 재귀적으로 제거
-			move_directory_trash(tmp);
-		else 
-			unlink(tmp); // rename함수 사용할 것
-	}
+	   if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우 재귀적으로 제거
+	   move_directory_trash(tmp);
+	   else 
+	   unlink(tmp); // rename함수 사용할 것
+	   }
 
-	closedir(dp);
-	*/
+	   closedir(dp);
+	   
 }
+*/
 
 void print_list_size(file_node *head, char *path, int number, int op_switch) // 지정 파일 상대 경로 및 크기 출력
 {

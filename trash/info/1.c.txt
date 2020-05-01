@@ -1,0 +1,4 @@
+[Trash info]
+/Users/codejune/Desktop/C_SSU_Monitoring/trash/info/1.c.txt
+D : 2020-05-01 23:31:39
+M : 2020-05-01 15:06:10
