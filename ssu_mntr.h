@@ -54,9 +54,11 @@
 #define MAX_BUFFER_SIZE 1024
 
 // 디렉토리
-#define CHECK "check"
-#define TRASH "trash"
-#define LOG   "log.txt"
+#define CHECK       "check"
+#define TRASH       "trash"
+#define TRASH_FILES TRASH "/files"
+#define TRASH_INFO  TRASH "/info"
+#define LOG         "log.txt"
 
 // 모니터링 상태
 #define UNCHCK -1
@@ -71,7 +73,7 @@
 #define PROMPT "20162448>"
 
 // 권한
-#define DIR_ACCESS_MODE 0755
+#define DIR_MODE 0755
 
 typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 	char name[BUFFER_SIZE]; // 파일 이름
@@ -98,7 +100,9 @@ typedef struct ssu_commandToken {
 void ssu_mntr(void); // 프롬프트 메인 함수
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
-void remove_directory(char *path); // 디렉토리 삭제
+char *get_file_name(char *path); // 파일명 추출
+int move_file_trash(file_node *head); // 파일 휴지통 이동
+int move_directory_trash(file_node *head); // 디렉토리 휴지통 이동
 void print_list_size(file_node *head, char *path, int number, int op_switch); // 지정 파일 상대 경로 및 크기 출력
 void print_list_tree(file_node *head, int level, int level_check[], int is_root); // 모니터링 파일 목록 트리 출력
 void print_indent(int level, int level_check[]); // 트리 출력 보조 함수
@@ -106,7 +110,7 @@ char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void to_lower_case(char *str); // 문자열 소문자 변환
 void init_option(void); // 옵션 확인 초기화
-void print_usage(void);
+void print_usage(void); // 도움말 출력
 
 // mntr_process.c
 void mntr_process(void); // 모니터링 메인 함수
@@ -118,4 +122,5 @@ int compare_file(file_node *new_file, file_node *old_file); // 파일 정보 비
 int write_change_list(file_node *head, int idx, int status); // 변경 사항 목록 작성
 void sort_change_list(int idx); // 변경사항 목록 시간순 정렬
 void write_change_log(int idx); // 변경사항 파일 기록
+char *make_time_format(struct tm time); // 시간 형식 문자열 생성
 void free_list(file_node *head); // 모니터링 파일 목록 메모리 할당 해제

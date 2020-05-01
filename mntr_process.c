@@ -16,7 +16,7 @@ void mntr_process(void) // 모니터링 메인 함수
 	sprintf(check_path, "%s/%s", pwd, CHECK);
 
 	if(access(CHECK, F_OK) < 0) // 모니터링 디렉토리 확인
-			mkdir(CHECK, DIR_ACCESS_MODE); // 존재하지 않을 경우 생성
+			mkdir(CHECK, DIR_MODE); // 존재하지 않을 경우 생성
 
 	if((fp = fopen(LOG, "w+")) == NULL) { // 로그 파일 열기 및 생성, 기존 로그 덮어쓰기
 			fprintf(stderr, "fopen error for log.txt\n");
@@ -251,7 +251,7 @@ void sort_change_list(int idx) // 변경사항 목록 시간순 정렬
 void write_change_log(int idx) // 변경사항 파일 기록
 {
 	char file_name[BUFFER_SIZE];
-	char time_format[BUFFER_SIZE];
+	char *time_format;
 	struct tm time;
 	FILE *fp;
 	int i;
@@ -275,13 +275,7 @@ void write_change_log(int idx) // 변경사항 파일 기록
 
 		
 		time = *localtime(&change_list[i].time);
-		sprintf(time_format, YYMMDD_HHMMSS, 
-				time.tm_year + 1900,
-				time.tm_mon + 1,
-				time.tm_mday,
-				time.tm_hour,
-				time.tm_min,
-				time.tm_sec);
+		time_format = make_time_format(time);
 
 		switch(change_list[i].status) {
 			case CREATE:
@@ -296,6 +290,21 @@ void write_change_log(int idx) // 변경사항 파일 기록
 		}
 	}
 	fclose(fp);
+}
+
+char *make_time_format(struct tm time) // 시간 형식 문자열 생성
+{
+	static char time_format[BUFFER_SIZE];
+	
+	sprintf(time_format, YYMMDD_HHMMSS,
+                   time.tm_year + 1900,
+                   time.tm_mon + 1,
+                   time.tm_mday,
+                   time.tm_hour,
+                   time.tm_min,
+                   time.tm_sec);
+
+	return (char*)time_format;
 }
 
 void free_list(file_node *head) // 모니터링 파일 목록 메모리 할당 해제

@@ -54,7 +54,7 @@ void ssu_mntr(void) // 프롬프트 메인 함수
 			case DELETE:
 
 				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // 인자 개수가 부족할 경우
-					fprintf(stderr, "%s: FILE_NAME doesn't exist", command.argv[0]);
+					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
 
@@ -65,13 +65,15 @@ void ssu_mntr(void) // 프롬프트 메인 함수
 
 				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변경
 
-				head = make_list(check_path);
+				head = make_list(target_path);
+				move_file_trash(head);
+
 				/*
 				   if((head = is_file_exist(head, target_path)) == NULL) { // 해당 파일 탐색, 존재시 해당 노드, 존재하지 않으면 NULL
 				   fprintf(stderr, "%s: %s doesn't exist", command.argv[1]);
 				   continue;
 				   }
-				 */
+				   */
 
 
 
@@ -142,12 +144,9 @@ void ssu_mntr(void) // 프롬프트 메인 함수
 			default:
 				continue;
 		}
-
 		init_option();
-		//memset(target_path, 0, sizeof(char));
-		//memset(command_line, 0, sizeof(char));
-
 	}
+
 	fprintf(stdout, "Good bye...\n");
 	fflush(stdout); // 표준 출력 스트림을 비움
 	return;
@@ -201,15 +200,87 @@ int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 		return UNKNOWN;
 }
 
-void remove_directory(char *path) // 디렉토리 삭제
+char *get_file_name(char *path) // 파일명 추출
+{
+	static char file_name[BUFFER_SIZE];
+	char *tmp;
+
+	strcpy(file_name, strtok(path, "/"));
+	while((tmp = strtok(NULL, "/")) != NULL) {
+		strcpy(file_name, tmp);
+	}
+	return (char*)file_name;
+}
+
+
+int move_file_trash(file_node *head) // 파일을 휴지통 이동
+{
+	FILE *fp;
+	char *file_name;
+	char target_path[BUFFER_SIZE];
+	char trash_files_path[BUFFER_SIZE];
+	char trash_info_path[BUFFER_SIZE];
+	char *time_format;
+	struct tm time_info;
+	time_t cur_time;
+
+	sprintf(trash_files_path, "%s/%s", pwd, TRASH_FILES);
+	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
+
+	if(access(TRASH, F_OK) < 0) // 휴지통 디렉토리가 존재하지 않을 경우
+		mkdir(TRASH, DIR_MODE);
+
+	if(access(TRASH_FILES, F_OK) < 0) // 삭제 파일 저장 디렉토리가 존재하지 않을 경우
+		mkdir(TRASH_FILES, DIR_MODE);
+
+	if(access(TRASH_INFO, F_OK) < 0) // 삭제 파일 정보 디렉토리가 존재하지 않을 경우
+		mkdir(TRASH_INFO, DIR_MODE);
+
+	if(S_ISDIR(head->attr.st_mode)) // 삭제할 파일이 디렉토리인 경우
+		move_directory_trash(head);
+	else {
+		file_name = get_file_name(head->name); // 파일 이름 추출
+
+		// 파일 정보 생성
+		sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
+		printf("%s\n", target_path);
+		if((fp = fopen(target_path, "w+")) < 0) {
+			fprintf(stderr, "fopen error for %s\n", target_path);
+			return false;
+		}
+
+		time(&cur_time);
+		time_info = *localtime(&cur_time);
+		time_format = make_time_format(time_info);
+		fprintf(fp, "[Trash info]\n%s\nD : %s\n", target_path, time_format);
+		
+		time_info = *localtime(&(head->attr.st_mtime));
+		time_format = make_time_format(time_info);
+		fprintf(fp, "M : %s\n", time_format);
+		fclose(fp);
+
+
+		// 파일 원본 이동
+		//sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
+		//rename(head->name, target_path); // 이동
+		
+	}
+	return true;
+}
+
+int move_directory_trash(file_node *head) // 디렉토리를 휴지통 이동
 {
 	// trash와 info에 저장하는 코드 작성 필요!
+	file_node *now;
 	struct dirent *dirp;
 	struct stat statbuf;
 	DIR *dp;
 	char tmp[MAX_BUFFER_SIZE];
 
-	if((dp = opendir(path)) == NULL)
+	now = head;
+	return true;
+/*
+	if((dp = opendir(now->name)) == NULL)
 		return;
 
 	while((dirp = readdir(dp)) != NULL) { // path에 존재하는 디렉토리 안에 파일들 전부 삭제
@@ -222,13 +293,13 @@ void remove_directory(char *path) // 디렉토리 삭제
 			continue;
 
 		if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우 재귀적으로 제거
-			remove_directory(tmp);
-		else
-			unlink(tmp);
+			move_directory_trash(tmp);
+		else 
+			unlink(tmp); // rename함수 사용할 것
 	}
 
 	closedir(dp);
-	remove_directory(path);
+	*/
 }
 
 void print_list_size(file_node *head, char *path, int number, int op_switch) // 지정 파일 상대 경로 및 크기 출력
@@ -264,16 +335,12 @@ void print_list_size(file_node *head, char *path, int number, int op_switch) // 
 void print_list_tree(file_node *head, int level, int level_check[], int is_root) // 모니터링 파일 목록 트리 출력
 {
 	file_node *now;
-	char file_name[BUFFER_SIZE];
-	char *tmp;
+	char *file_name;
 
 	now = head;
 
 	while(true) {
-		strcpy(file_name, strtok(now->name, "/")); // 파일명 추출
-		while((tmp = strtok(NULL, "/")) != NULL) {
-			strcpy(file_name, tmp);
-		}
+		file_name = get_file_name(now->name);
 
 		if(is_root) { // 루트 디렉토리 노드일 경우 디렉토리 이름만 출력 후 하위 파일 노드로 이동
 			printf("%s\n", file_name); // 파일명 출력

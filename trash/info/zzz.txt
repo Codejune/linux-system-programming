@@ -1,0 +1,4 @@
+[Trash info]
+/Users/codejune/Desktop/C_SSU_Monitoring/trash/info/zzz.txt
+D : 2020-05-01 17:47:52
+M : 2020-04-30 17:47:24
