@@ -12,9 +12,6 @@ int main(void){
 	pid_t sid_stderr;
 	pid_t sid_stdin;
 	pid_t sid_stdout;
-	struct timeval start, end;
-
-	gettimeofday(&start, NULL); // 시작 시간 저장
 
 	sid_stdin = tcgetsid(STDIN_FILENO); // STDIN SID 획득
 
@@ -44,7 +41,5 @@ int main(void){
 	else
 		printf("Session Leader for stderr: %d\n", sid_stderr);
 
-	gettimeofday(&end, NULL); // 종료 시간 저장
-	printf("%d ms\n", (int)((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec));
 	exit(0);
 }

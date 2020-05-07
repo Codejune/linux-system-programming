@@ -13,10 +13,7 @@ static void ssu_print_ids(char *name);
 
 int main(void){
 	pid_t pid;
-	struct timeval start, end;
 	char character;
-
-	gettimeofday(&start, NULL); // 시작 시간 저장
 
 	ssu_print_ids("parent");
 	if((pid = fork()) < 0){ // 자식 프로세스 생성
@@ -35,8 +32,7 @@ int main(void){
 
 		if(read(STDIN_FILENO, &character, 1) != 1)
 			fprintf(stderr, "read error\n");
-		gettimeofday(&end, NULL); // 종료 시간 저장
-		printf("%d ms\n", (int)((end.tv_sec - start.tv_sec) * 1000000 + end.tv_usec - start.tv_usec));
+
 		exit(0);
 	}
 }
