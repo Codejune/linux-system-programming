@@ -1,62 +1,67 @@
 #include "monitoring.h"
 
 char pwd[BUFFER_SIZE];
+char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
+char log_path[BUFFER_SIZE];
 change_file change_list[MAX_BUFFER_SIZE]; // 변경 목록
 
 int main(void) // 모니터링 메인 함수
 {
-	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
 	FILE *fp; // log.txt 파일 구조체
-	int old_list_cnt, new_list_cnt; // 모니터링 디렉토리 파일 개수(기존, 신규)
-	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
-	int is_first = true;
-	int change_list_cnt;
 
 	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK);
+	sprintf(log_path, "%s/%s", pwd, LOG);
 
 	if(access(CHECK, F_OK) < 0) // 모니터링 디렉토리 확인
-			mkdir(CHECK, DIR_MODE); // 존재하지 않을 경우 생성
+		mkdir(CHECK, DIR_MODE); // 존재하지 않을 경우 생성
 
 	if((fp = fopen(LOG, "w+")) == NULL) { // 로그 파일 열기 및 생성, 기존 로그 덮어쓰기
-			fprintf(stderr, "fopen error for log.txt\n");
-			exit(1);
+		fprintf(stderr, "fopen error for log.txt\n");
+		exit(1);
 	}
 	fclose(fp);
-	
-	init_process();
+
+	set_daemon_process();
+	monitoring();
+
+	exit(0);
+}
+
+void monitoring(void) // 모니터링
+{
+	int old_list_cnt, new_list_cnt; // 모니터링 디렉토리 파일 개수(기존, 신규)
+	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
+	int is_first;
+	int change_list_cnt;
+
+	is_first = true;
 
 	while(true) {
 		new_list = make_list(check_path); // 현재 파일 목록 및 상태 저장
 		new_list_cnt = count_file(new_list); // 현재 목록에 존재하는 파일 개수
 		init_list_status(new_list->child, UNCHCK); // 현재 파일 목록 모니터링 상태 초기화
-		
+
 		if(is_first) { // 최초 실행일 경우
 			old_list = new_list;
 			old_list_cnt = new_list_cnt;
 			is_first = false;
 			continue;
 		}
-
-
+		
 		compare_list(new_list->child, old_list->child);
 		change_list_cnt = write_change_list(new_list->child, 0, CREATE);
 		change_list_cnt = write_change_list(old_list->child, change_list_cnt, DELETE);
 		sort_change_list(change_list_cnt);
 
-		for(int i = 0; i < change_list_cnt; i++) 
-			printf("change_list[%d] = %d, %s\n", i, change_list[i].status, change_list[i].name);
-
 		write_change_log(change_list_cnt);
-
-		//free_list(old_list);
-
 		old_list = new_list;
 		old_list_cnt = new_list_cnt;
 		init_list_status(old_list->child, UNCHCK);
-		sleep(5);
+		sleep(1);
 	}
 }
+
 
 void init_list_status(file_node *head, int status) // 모니터링 파일 상태 초기화
 {
@@ -76,6 +81,29 @@ void init_list_status(file_node *head, int status) // 모니터링 파일 상태
 
 		else break;
 	}
+}
+
+int count_file(file_node *head) // 파일 개수 반환 
+{
+	int cnt;
+	file_node *now;
+
+	cnt = 0;
+	now = head->child; // 주어진 루트노드의 자식으로 시작
+
+	while(true) { // 개수 탐색 시작
+		if(now->child != NULL) { // 현재 탐색하는 파일이 디렉토리일 경우
+
+			cnt += count_file(now); // 해당 디렉토리 파일 개수 재귀 탐색
+			now = now->next; // 다음 파일 탐색
+
+			if(now == NULL) // 다음 파일이 더이상 없을 경우
+				break;
+		} else if(now->next != NULL) // 다음 탐색할 파일이 존재할 경우(현재 디렉토리의 파일 목록 끝)
+			now = now->next;  // 다음 파일 탐색
+		else break;
+	}
+	return cnt;
 }
 
 void compare_list(file_node *new_list, file_node *old_list) // 파일 목록 트리 비교
@@ -101,7 +129,7 @@ void compare_list(file_node *new_list, file_node *old_list) // 파일 목록 트
 int compare_file(file_node *new_file, file_node *old_file) // 파일 정보 비교
 {
 	file_node *now;
-	
+
 	now = new_file;
 
 	while(true) {
@@ -127,11 +155,11 @@ int compare_file(file_node *new_file, file_node *old_file) // 파일 정보 비�
 	}
 	return false;
 }
-		
+
 int write_change_list(file_node *head, int idx, int status) // 변경사항 목록 작성
 {
 	file_node *now;
-	
+
 	now = head;
 
 	while(true) {
@@ -187,8 +215,8 @@ void write_change_log(int idx) // 변경사항 파일 기록
 	FILE *fp;
 	int i;
 	char *tmp;
-
-	if((fp = fopen(LOG, "r+")) < 0) {
+	
+	if((fp = fopen(log_path, "r+")) < 0) {
 		fprintf(stderr, "fopen error for %s\n", LOG);
 		exit(1);
 	}
@@ -200,11 +228,9 @@ void write_change_log(int idx) // 변경사항 파일 기록
 		tmp += strlen(CHECK) + 1; // strlen("check") + 1(/) 
 		strcpy(file_name, tmp);
 
-		
 		while((tmp = strchr(file_name, '/')) != NULL) // file_name = "파일명_"
 			*tmp = '_';
 
-		
 		time = *localtime(&change_list[i].time);
 		time_format = make_time_format(time);
 
@@ -222,29 +248,42 @@ void write_change_log(int idx) // 변경사항 파일 기록
 	}
 	fclose(fp);
 }
-		
-void init_process(void) // 데몬 프로세스 설정
+
+void set_daemon_process(void) // 데몬 프로세스 설정
 {
 	pid_t pid;
 	int fd, maxfd;
 
-	if((pid = fork()) > 0) 
+	if((pid = fork()) < 0) {
+		fprintf(stderr, "fork error\n");
+		exit(1);
+	} else if(pid != 0)  // #1 백그라운드 수행
 		exit(0);
 
-	setsid(); // 새로운 프로세스 그룹 생성(SID)
+	// #2 새로운 프로세스 그룹 생성
+	setsid(); 
 
+	// #3 터미널 입출력 시그널 무시
 	signal(SIGTTIN, SIG_IGN); // STDIN 무시
 	signal(SIGTTOU, SIG_IGN); // STDOUT 무시
 	signal(SIGTSTP, SIG_IGN); // STDERR 무시
 
-	maxfd = getdtablesize(); // 모든 파일 디스크럽터 개수 획득
+	// #4 파일 모드 생성 마스크 해제
+	umask(false);
 
-	for(fd = 0; fd < maxfd; fd++) // 모든 파일 디스크럽터 연결 종료
+	// #5 루트 디렉토리 이동
+	chdir("/");
+
+	
+	// #6 모든 파일 디스크럽터 연결 종료
+	maxfd = getdtablesize(); // 모든 파일 디스크럽터 개수 획득
+	for(fd = 0; fd < maxfd; fd++) 
 		close(fd);
 
-	umask(0); // 권한 마스크 모두 해제
-	chdir("/"); // 루트 디렉토리 이동
+	// #7 표준 입출력 및 에러 재지정
 	fd = open("dev/null", O_RDWR); // STDIO 재설정
 	dup(0);
 	dup(0);
+
+	// 라이브러리 루틴 무효화
 }

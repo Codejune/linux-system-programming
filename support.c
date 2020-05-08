@@ -1,5 +1,19 @@
 #include "common.h"
 
+file_node *make_node(void) // 노드 생성
+{
+	file_node *tmp = malloc(sizeof(file_node));
+
+	memset(tmp->name, 0, BUFFER_SIZE);
+	tmp->next = NULL;
+	tmp->child = NULL;
+	tmp->namelist = NULL;
+	tmp->size = 0;
+	tmp->status = UNCHCK;
+
+	return tmp;
+}
+
 file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 {
 	file_node *head, *now;
@@ -49,21 +63,6 @@ file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 	return head;
 }
 
-file_node *make_node(void) // 노드 생성
-{
-	file_node *tmp = malloc(sizeof(file_node));
-
-	memset(tmp->name, 0, BUFFER_SIZE);
-	tmp->next = NULL;
-	tmp->child = NULL;
-	tmp->namelist = NULL;
-	tmp->size = 0;
-	tmp->status = UNCHCK;
-
-	return tmp;
-}
-
-
 int count_size(file_node *head) // 디렉토리 크기 반환
 {
 	file_node *now;
@@ -79,27 +78,16 @@ int count_size(file_node *head) // 디렉토리 크기 반환
 	return size;
 }
 
-int count_file(file_node *head) // 파일 개수 반환 
+void free_list(file_node *head) // 모니터링 파일 목록 메모리 할당 해제
 {
-	int cnt;
-	file_node *now;
+	// 모든 노드들을 찾아서 메모리 할당을 해제한다.
+	if(head->child != NULL) // 자식 탐색
+		free_list(head->child);
 
-	cnt = 0;
-	now = head->child; // 주어진 루트노드의 자식으로 시작
+	if(head->next != NULL) // 형제 탐색
+		free_list(head->next);
 
-	while(true) { // 개수 탐색 시작
-		if(now->child != NULL) { // 현재 탐색하는 파일이 디렉토리일 경우
-
-			cnt += count_file(now); // 해당 디렉토리 파일 개수 재귀 탐색
-			now = now->next; // 다음 파일 탐색
-
-			if(now == NULL) // 다음 파일이 더이상 없을 경우
-				break;
-		} else if(now->next != NULL) // 다음 탐색할 파일이 존재할 경우(현재 디렉토리의 파일 목록 끝)
-			now = now->next;  // 다음 파일 탐색
-		else break;
-	}
-	return cnt;
+	free(head); // 메모리 엑세스 허용
 }
 
 char *make_time_format(struct tm time) // 시간 형식 문자열 생성
@@ -117,14 +105,3 @@ char *make_time_format(struct tm time) // 시간 형식 문자열 생성
 	return (char*)time_format;
 }
 
-void free_list(file_node *head) // 모니터링 파일 목록 메모리 할당 해제
-{
-	// 모든 노드들을 찾아서 메모리 할당을 해제한다.
-	if(head->child != NULL) // 자식 탐색
-		free_list(head->child);
-
-	if(head->next != NULL) // 형제 탐색
-		free_list(head->next);
-
-	free(head); // 메모리 엑세스 허용
-}

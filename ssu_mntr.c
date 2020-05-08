@@ -3,17 +3,23 @@
 
 int main(void) // 프로세스 운영 메인 함수
 {
-	pid_t mntr_pid;
-	
+	pid_t daemon_pid;
+
 
 	// 프롬프트, 모니터링 프로세스 시작
-	if((mntr_pid = fork()) == 0) // 자식 프로세스: 모니터링
+	if((daemon_pid = fork()) < 0) { 
+		fprintf(stderr, "fork error\n");
+		exit(1);
+	}
+
+	// 자식 프로세스: 모니터링
+	if(daemon_pid == 0) 
 		execl("./monitoring", "", (char*)0);
-	else // 부모 프로세스: 프롬프트
-		execl("./prompt", "", (char*)0);
 
-	// 모니터링 프로세스 종료
-	//kill(mntr_pid, SIGKILL); // SIGKILL(LINUX), KILL(MAC) == 9
+	// 부모 프로세스: 프롬프트
+	prompt();
 
+	// 모니터링 프로세스 종료(미구현)
+	kill(daemon_pid + 1, SIGKILL); // SIGKILL(LINUX), KILL(MAC) == 9
 	exit(0);
 }

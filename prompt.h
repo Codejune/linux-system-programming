@@ -5,7 +5,6 @@ typedef struct ssu_commandToken { // 프롬프트 명령어 구조체
 	int argc; // 명령행 인자 개수
 } commands;
 
-//void prompt(void); // 프롬프트 메인
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
 char *get_file_name(char *path); // 파일명 추출

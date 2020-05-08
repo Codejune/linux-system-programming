@@ -6,7 +6,7 @@ int option_r = false;
 int option_d = false;
 int option_l = false;
 
-int main(void) // 프롬프트 메인 함수
+void prompt(void) // 프롬프트 메인 함수
 {
 	// 프롬프트
 	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
@@ -150,7 +150,7 @@ int main(void) // 프롬프트 메인 함수
 			case HELP:
 			case UNKNOWN:
 				if(!strcmp(command.argv[0], "ps"))
-					system("ps -l");
+					system("ps -efj");
 
 				print_usage();
 				break;
@@ -344,8 +344,8 @@ void print_list_size(file_node *head, char *path, int number, int op_switch) // 
 		if(op_switch) {
 			if(option_d) { // 옵션이 주어졌을 경우
 				if(!S_ISDIR(now->attr.st_mode))  // 파일인 경우
-					return; // 탐색 종료
-			} else return; // 옵션이 주어지지 않은 경우
+					break; // 탐색 종료
+			} else break; // 옵션이 주어지지 않은 경우
 		}
 
 		op_switch = false;
@@ -355,7 +355,7 @@ void print_list_size(file_node *head, char *path, int number, int op_switch) // 
 
 		if(now->next != NULL) // 같은 레벨에 파일들이 더 존재할 경우
 			now = now->next;
-		else return; // 탐색 종료
+		else break; // 탐색 종료
 	}
 }
 

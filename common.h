@@ -85,9 +85,9 @@ typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 	int status;
 } file_node;
 
+void prompt(void); // 프롬프트
 file_node* make_list(char *path); // 디렉토리 파일 목록 트리화
 file_node *make_node(void); // 노드 생성
 int count_size(file_node *head); // 디렉토리 크기 반환
-int count_file(file_node *head); // 파일 개수 반환
-char *make_time_format(struct tm time); // 시간 형식 문자열 생성 
 void free_list(file_node *head); // 파일 목록 구조체 메모리 할당 해제 
+char *make_time_format(struct tm time); // 시간 형식 문자열 생성 
