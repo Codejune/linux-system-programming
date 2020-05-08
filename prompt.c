@@ -163,7 +163,6 @@ void prompt(void) // 프롬프트 메인 함수
 
 	fprintf(stdout, "Good bye...\n");
 	fflush(stdout); // 표준 출력 스트림을 비움
-	exit(0);
 }
 
 commands make_command_token(char *command_line) // 명령어 전체 문장 토큰화
