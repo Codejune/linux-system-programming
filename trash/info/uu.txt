@@ -1,0 +1,4 @@
+[Trash info]
+/home/codejune/C_SSU_Monitoring/check/uu
+D : 2020-05-10 07:23:28
+M : 2020-05-10 07:20:01

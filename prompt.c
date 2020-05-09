@@ -101,7 +101,7 @@ void prompt(void) // 프롬프트 메인 함수
 					// FILE_NAME 파싱
 					if(!is_filename) {
 						if(access(command.argv[idx], F_OK) < 0) { // 파일이 존재하지 않을 경우
-							fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[idx]);
+							fprintf(stderr, "%s: access error1 for %s\n", command.argv[0], command.argv[idx]);
 							is_invalid = true;
 							break;
 						} else { // 파일이 존재하는 경우
@@ -323,6 +323,7 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 	char *time_format;
 	struct tm time_info;
 	time_t cur_time;
+	int overlap;
 
 	sprintf(trash_files_path, "%s/%s", pwd, TRASH_FILES);
 	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
@@ -346,7 +347,11 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 			unlink(head->name);
 	} else {
 		// 파일 정보 생성
-		sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
+		if((overlap = find_trash_file(file_name)) > 0) 
+			sprintf(target_path, "%s/%d_%s.txt", trash_info_path, overlap, file_name);
+		else 
+			sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
+
 		if((fp = fopen(target_path, "w+")) < 0) {
 			fprintf(stderr, "fopen error for %s\n", target_path);
 			return;
@@ -363,7 +368,10 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 		fclose(fp);
 
 		// 파일 원본 이동
-		sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
+		if(overlap > 0)
+			sprintf(target_path, "%s/%d_%s", trash_files_path, overlap, file_name);
+		else 
+			sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
 		rename(head->name, target_path); // 이동
 	}
 }
@@ -512,31 +520,35 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 		sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로
 
 		// 정보 파일에서 데이터 추출
-		if((fp = fopen(tmp, "r+")) < 0)
+		if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드로 열기
 			fprintf(stderr, "fopen error for %s\n", tmp);
-		fseek(fp, 13, SEEK_SET);
-		fscanf(fp, "%s\n", path); // 파일 경로 획득
-		fscanf(fp, "D : %s %s\n", date, time); // 삭제 시간 획득
-		fclose(fp);
+			continue;
+		}
+		fseek(fp, 13, SEEK_SET); // 헤더 생략
+		fscanf(fp, "%s\n", path); // 파일 경로
+		fscanf(fp, "D : %s %s\n", date, time); // 삭제 시간
+		fclose(fp); // 파일 닫기
 
+		// 시간 변환
 		tmp_tm = get_tm(date, time);
 		now_sec = mktime(&tmp_tm);
+
+		// 경로 변환
 		sprintf(path, "%s/%s/%s", pwd, TRASH_FILES, get_file_name(path));
 
-		if(is_first) {
-			old_sec = now_sec;
+		if(is_first) { // 최초 탐색일 경우
+			old_sec = now_sec; 
 			strcpy(old_path, path);
-			strcpy(old_info, tmp); // 정보 파일 경로 변경
+			strcpy(old_info, tmp); 
 			is_first = false;
 		} else {
 			if(now_sec < old_sec) {
 				old_sec = now_sec;
 				strcpy(old_path, path);
-				strcpy(old_info, tmp); // 정보 파일 경로 변경
+				strcpy(old_info, tmp);
 			}
 		}
 	}
-	printf("old_path:%s\nold_info:%s\ndate:%s\ntime:%s\n", path, tmp, date, time);
 
 	stat(old_path, &statbuf); // 가장 오래된 파일 정보 획득
 
@@ -546,6 +558,55 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 		unlink(old_path);
 	unlink(old_info);
 	chdir(pwd);
+}
+
+int find_trash_file(const char *file_name) // 휴지통 중복 파일 탐색
+{
+	char trash_info_path[BUFFER_SIZE];
+	char trash_files_path[BUFFER_SIZE];
+	char target_path[MAX_BUFFER_SIZE];
+	struct dirent **namelist;
+	int overlap_count;
+	int file_count;
+	int tmp;
+	int i;
+
+	overlap_count = 0;
+	sprintf(trash_files_path, "%s/%s", pwd, TRASH_FILES);
+	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
+
+	chdir(trash_files_path);
+
+	file_count = scandir(trash_files_path, &namelist, NULL, alphasort);
+	for(i = 0; i < file_count; i++) {
+
+		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) 
+				continue;
+
+		if(!strcmp(file_name, namelist[i]->d_name)) { // 최초 중복되는 경우
+			sprintf(target_path, "%s/1_%s", trash_files_path, file_name);
+			sprintf(trash_files_path, "%s/%s", trash_files_path, file_name);
+			rename(trash_files_path, target_path); // 원본 파일 이름 변경 
+			sprintf(target_path, "%s/1_%s.txt", trash_info_path, file_name);
+			sprintf(trash_info_path, "%s/%s.txt", trash_info_path, file_name);
+			rename(trash_info_path, target_path); // 정보 파일 이름 변경
+			chdir(pwd);
+			return true + 1;
+		}
+		
+		sscanf(namelist[i]->d_name, "%d_%s", &tmp, target_path);
+		
+		if(tmp > false && !strcmp(target_path, file_name)) // 다수 중복되는 경우
+			overlap_count = tmp;
+	}
+
+	if(overlap_count > 0) {
+		chdir(pwd);
+		return overlap_count + 1;
+	}
+
+	chdir(pwd);
+	return false;
 }
 
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch) // 지정 파일 상대 경로 및 크기 출력
