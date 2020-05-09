@@ -18,5 +18,6 @@ char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void to_lower_case(char *str); // 문자열 소문자 변환
 void init_option(void); // 옵션 확인 초기화
+void free_command(commands command); // 명령행 구조체 초기화
 void print_usage(void); // 사용법 출력
 

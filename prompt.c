@@ -19,10 +19,15 @@ void prompt(void) // 프롬프트 메인 함수
 
 	// 공통
 	file_node *head;
+	int is_invalid;
 	int idx;
 
 	// DELETE
-	struct tm time;
+	struct tm reserv_tm;
+	time_t current_t;
+	time_t reserv_t;
+	int is_endtime;
+	int is_filename;
 
 	// SIZE
 	int number;
@@ -52,44 +57,91 @@ void prompt(void) // 프롬프트 메인 함수
 		// HELP(6)    : HELP
 
 		switch(command_type) {
-			case DELETE:
+			case DELETE: 
 
-				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // 인자 개수가 부족할 경우
+				is_invalid = false;
+				is_endtime = false;
+				is_filename = false;
+
+				chdir(CHECK);
+
+				if(command.argc < 2) { // 인자 개수가 부족할 경우
 					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
 
-				if(access(command.argv[1], F_OK) < 0) { // 파일이 존재하지 않을 경우
-					fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[1]);
-					continue;
-				}
+				// 명령행 인자 파싱 및 에러 검출
+				// 컴출 순위
+				// 1. 옵션
+				// 2. 파일명
+				// 3. 시간
+				for(idx = 1; idx < command.argc; idx++) {
 
-				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변경
+					// 옵션 파싱
+					if(command.argv[idx][0] == '-') {
+						if(command.argv[idx][1] == 'r') { // -r 옵션
+							option_r = true;
+							continue;
+						} else if(command.argv[idx][1] == 'i') { // -i 옵션
+							option_i = true;
+							continue;
+						} else {
+							fprintf(stderr, "%s: invalid option %c\n", command.argv[0], command.argv[idx][1]);
+							is_invalid = true;
+							break;
+						}
+					}
 
-				if(strstr(target_path, check_path) == NULL) { // FILE_NAME이 모니터링 디렉토리에 존재하지 않을 경우
-					fprintf(stderr, "%s: %s doesn't exist in %s\n", command.argv[0], command.argv[1], check_path);
-					continue;
-				}
-
-				for(idx = 0; idx < command.argc; idx++) { // 옵션 확인
-					if(!strcmp(command.argv[idx], "-i")) // -i 옵션
-						option_i = true;
-					else if(!strcmp(command.argv[idx], "-r")) // -r
-						option_r = true;
-				}
-
-				if(command.argc > 3) { // END_TIME이 주어질 경우
-					if(command.argv[2][0] == '-' || command.argv[3][0] == '-') {
-						fprintf(stderr, "%s: invalid input END_TIME\n", command.argv[0]);
+					// FILE_NAME 파싱
+					if(!is_filename) {
+						if(access(command.argv[idx], F_OK) < 0) { // 파일이 존재하지 않을 경우
+							fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[idx]);
+							is_invalid = true;
+							break;
+						} else { // 파일이 존재하는 경우
+							realpath(command.argv[idx], target_path); // 절대 경로로 변경
+							if(strstr(target_path, check_path) == NULL) { // FILE_NAME이 모니터링 디렉토리에 존재하지 않을 경우
+								fprintf(stderr, "%s: %s doesn't exist in %s\n", command.argv[0], command.argv[idx], check_path);
+								is_invalid = true;
+								break;
+							}
+							is_filename = true;
+						}
 						continue;
+					}
+
+					// END_TIME 파싱
+					if(!is_endtime && (idx + 1 < command.argc)) {
+						current_t = time(NULL);
+						reserv_tm = get_tm(command.argv[idx], command.argv[idx + 1]);
+						reserv_t = mktime(&reserv_tm);
+						is_endtime = true;
 					}
 				}
 
-
-				head = make_list(target_path); // 파일 목록 구조체 생성
-
-				if(!move_trash(head))
+				if(is_invalid) // 파싱 중 에러 발견 시
 					break;
+
+				else if(!is_filename) { // FILE_NAME이 존재하지 않을 경우
+					fprintf(stderr, "%s: invalid input\n", command.argv[0]);
+					break;
+				}
+
+				else if(option_r && !is_endtime) { // -r 옵션이 주어지고, END_TIME이 존재하지 않는 경우
+					fprintf(stderr, "%s: END_TIME doesn't exist\n", command.argv[0]);
+					break;
+				}
+
+				else if(reserv_t < current_t) { // END_TIME이 올바르지 않을 경우
+					fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
+					break;
+				}
+
+				//head = make_list(target_path); // 파일 목록 구조체 생성
+
+				//if(!move_trash(head))
+				//	break;
+				chdir(pwd);
 
 				break;
 
@@ -284,15 +336,20 @@ struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 	int year, month, day;
 	int hour, min;
 
-	sscanf(date, "%d:%d:%d", &year, &month, &day);
+	sscanf(date, "%d-%d-%d", &year, &month, &day);
 	sscanf(time, "%d:%d", &hour, &min);
 
-	tmp.tm_year = year - 1900;
-	tmp.tm_mon = month - 1;
-	tmp.tm_mday = day;
-	tmp.tm_hour = hour;
-	tmp.tm_min = min;
-	tmp.tm_sec = -1;
+	// 시간 구조체 파싱 예외
+	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60) 
+		return tmp;
+	else {
+		tmp.tm_year = year - 1900;
+		tmp.tm_mon = month - 1;
+		tmp.tm_mday = day;
+		tmp.tm_hour = hour;
+		tmp.tm_min = min;
+		tmp.tm_sec = 0;
+	}
 
 	return tmp;
 }
@@ -458,6 +515,15 @@ void init_option(void) // 옵션 확인 초기화
 	option_r = false;
 	option_d = false;
 	option_l = false;
+}
+
+void free_command(commands command) // 명령행 구조체 초기화
+{
+	int i;
+
+	for(i = 0; i < command.argc; i++)
+		free(command.argv[i]);
+	free(command.argv);
 }
 
 void print_usage(void) // 사용법 출력
