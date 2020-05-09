@@ -20,6 +20,7 @@ void prompt(void) // 프롬프트 메인 함수
 	// 공통
 	file_node *head;
 	int is_invalid;
+	int is_filename;
 	int idx;
 
 	// DELETE
@@ -27,7 +28,6 @@ void prompt(void) // 프롬프트 메인 함수
 	time_t current_t;
 	time_t reserv_t;
 	int is_endtime;
-	int is_filename;
 
 	// SIZE
 	int number;
@@ -70,8 +70,7 @@ void prompt(void) // 프롬프트 메인 함수
 					continue;
 				}
 
-				// 명령행 인자 파싱 및 에러 검출
-				// 컴출 순위
+				// 명령행 인자 파싱 및 에러 검출 순위
 				// 1. 옵션
 				// 2. 파일명
 				// 3. 시간
@@ -79,17 +78,16 @@ void prompt(void) // 프롬프트 메인 함수
 
 					// 옵션 파싱
 					if(command.argv[idx][0] == '-') {
-						if(command.argv[idx][1] == 'r') { // -r 옵션
+						if(command.argv[idx][1] == 'r') // -r 옵션
 							option_r = true;
-							continue;
-						} else if(command.argv[idx][1] == 'i') { // -i 옵션
+					    else if(command.argv[idx][1] == 'i') // -i 옵션
 							option_i = true;
-							continue;
-						} else {
+						else {
 							fprintf(stderr, "%s: invalid option %c\n", command.argv[0], command.argv[idx][1]);
 							is_invalid = true;
 							break;
 						}
+						continue;
 					}
 
 					// FILE_NAME 파싱
@@ -119,69 +117,90 @@ void prompt(void) // 프롬프트 메인 함수
 					}
 				}
 
+				chdir(pwd);
+
 				if(is_invalid) // 파싱 중 에러 발견 시
 					break;
-
 				else if(!is_filename) { // FILE_NAME이 존재하지 않을 경우
 					fprintf(stderr, "%s: invalid input\n", command.argv[0]);
 					break;
-				}
-
-				else if(option_r && !is_endtime) { // -r 옵션이 주어지고, END_TIME이 존재하지 않는 경우
+				} else if(option_r && !is_endtime) { // -r 옵션이 주어지고, END_TIME이 존재하지 않는 경우
 					fprintf(stderr, "%s: END_TIME doesn't exist\n", command.argv[0]);
 					break;
-				}
-
-				else if(reserv_t < current_t) { // END_TIME이 올바르지 않을 경우
+				} else if(reserv_t < current_t) { // END_TIME이 올바르지 않을 경우
 					fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
 					break;
 				}
 
-				//head = make_list(target_path); // 파일 목록 구조체 생성
+				head = make_list(target_path); // 파일 목록 구조체 생성
 
 				//if(!move_trash(head))
 				//	break;
-				chdir(pwd);
-
+				free_list(head);
 				break;
 
 			case SIZE:
 
 				number = true;
+				is_invalid = false;
+				is_filename = false;
 
-				if(command.argc < 2 || (command.argv[1][0] == '-' && command.argc == 2)) { // FILE_NAME이 주어지지 않은 경우
+				if(command.argc < 2) { // FILE_NAME이 주어지지 않은 경우
 					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
 
-				if(access(command.argv[1], F_OK) < 0) { // 파일이 존재하지 않을 경우
-					fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[1]);
-					continue;
-				}
+				// 명령행 인자 파싱 및 에러 검출 순위
+				// 1. 옵션
+				// 2. 파일명
+				for(idx = 1; idx < command.argc; idx++) {
 
-				if(command.argc > 2) { // 인자가 2개 이상일 경우
-					if(!strcmp(command.argv[2], "-d")) { // -d 옵션이 존재하는 경우
-
-						if(command.argc < 4) { // -d 옵션이 존재하고 인자의 개수가 부족한 경우
-							fprintf(stderr, "%s: NUMBER doesn't exist\n", command.argv[0]);
-							continue;
-						} else if((number = atoi(command.argv[3])) == 0) { // -d옵션이 존재하고 NUMBER가 올바르지 않은 경우
-							fprintf(stderr, "%s: invalid input NUMBER\n", command.argv[0]);
-							continue;
+					//옵션 파싱
+					if(command.argv[idx][0] == '-') {
+						if(command.argv[idx][1] == 'd') { // -d 옵션
+							option_d = true;
+							if((number = atoi(command.argv[++idx])) == 0) { // NUMBER 
+								fprintf(stderr, "%s: invalid input NUMBER\n", command.argv[0]);
+								is_invalid = true;
+								break;
+							}
+						} else {
+							fprintf(stderr, "%s: invalid option %c\n", command.argv[0], command.argv[idx][1]);
+							is_invalid = true;
+							break;
 						}
+						continue;
+					}
 
-						option_d = true; // -d 옵션 확인
-
-					} else { // 인자가 제대로 주어지지 않은 경우
-						fprintf(stderr, "%s: invalid input OPTION\n", command.argv[0]);
+					// FILE_NAME 파싱
+					if(!is_filename) {
+						if(access(command.argv[idx], F_OK) < 0) { // 파일이 존재하지 않을 경우
+							fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[idx]);
+							is_invalid = true;
+							break;
+						} else { // 파일이 존재하는 경우
+							realpath(command.argv[idx], target_path); // 절대 경로로 변경
+							if(strstr(target_path, check_path) == NULL) { // FILE_NAME이 모니터링 디렉토리에 존재하지 않을 경우
+								fprintf(stderr, "%s: %s doesn't exist in %s\n", command.argv[0], command.argv[idx], check_path);
+								is_invalid = true;
+								break;
+							}
+							is_filename = true;
+						}
 						continue;
 					}
 				}
 
-				realpath(command.argv[1], target_path); // FILE_NAME을 절대 경로로 변환 
+				if(is_invalid) // 파싱 중 에러 발견 시
+					break;
+				else if(!is_filename) {
+					fprintf(stderr, "%s: invalid input\n", command.argv[0]);
+					break;
+				}
+
 				head = make_list(target_path); // 해당 경로의 파일 목록 구조체 생성
 				print_list_size(head, target_path, number, true); // 출력
-				//free_list(head);
+				free_list(head);
 
 				break;
 
@@ -193,7 +212,7 @@ void prompt(void) // 프롬프트 메인 함수
 				memset(level_check, 0, sizeof(level_check));
 				head = make_list(check_path); // 모니터링 디렉토리 파일 목록 구조체 생성
 				print_list_tree(head, 0, level_check, true); // 출력 
-				//free_list(head); // 메모리 할당 해제
+				free_list(head); // 메모리 할당 해제
 				break;
 
 			case EXIT:
@@ -212,8 +231,6 @@ void prompt(void) // 프롬프트 메인 함수
 		}
 		init_option();
 	}
-
-	fprintf(stdout, "Good bye...\n");
 	fflush(stdout); // 표준 출력 스트림을 비움
 }
 
