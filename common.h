@@ -7,8 +7,10 @@
 #include <signal.h>
 #include <dirent.h>
 #include <time.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/prctl.h>
 
 // 불 타입
 #ifndef true

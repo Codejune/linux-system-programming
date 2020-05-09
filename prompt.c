@@ -1,10 +1,6 @@
 #include "prompt.h"
 
 char pwd[BUFFER_SIZE];
-int option_i = false;
-int option_r = false;
-int option_d = false;
-int option_l = false;
 
 void prompt(void) // 프롬프트 메인 함수
 {
@@ -24,15 +20,21 @@ void prompt(void) // 프롬프트 메인 함수
 	int idx;
 
 	// DELETE
+	pthread_t tid;
+	threads thread;
 	struct tm reserv_tm;
 	time_t current_t;
 	time_t reserv_t;
 	int is_endtime;
+	int option_i;
+	int option_r;
 
 	// SIZE
 	int number;
+	int option_d;
 
 	// RECOVER
+	int option_l;
 
 	// TREE
 	int level_check[BUFFER_SIZE];
@@ -62,6 +64,8 @@ void prompt(void) // 프롬프트 메인 함수
 				is_invalid = false;
 				is_endtime = false;
 				is_filename = false;
+				option_i = false;
+				option_r = false;
 
 				chdir(CHECK);
 
@@ -80,7 +84,7 @@ void prompt(void) // 프롬프트 메인 함수
 					if(command.argv[idx][0] == '-') {
 						if(command.argv[idx][1] == 'r') // -r 옵션
 							option_r = true;
-					    else if(command.argv[idx][1] == 'i') // -i 옵션
+						else if(command.argv[idx][1] == 'i') // -i 옵션
 							option_i = true;
 						else {
 							fprintf(stderr, "%s: invalid option %c\n", command.argv[0], command.argv[idx][1]);
@@ -113,6 +117,11 @@ void prompt(void) // 프롬프트 메인 함수
 						current_t = time(NULL);
 						reserv_tm = get_tm(command.argv[idx], command.argv[idx + 1]);
 						reserv_t = mktime(&reserv_tm);
+						if((thread.sec = difftime(reserv_t, current_t)) < 0) {
+							fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
+							is_invalid = true;
+							break;
+						}
 						is_endtime = true;
 					}
 				}
@@ -127,16 +136,20 @@ void prompt(void) // 프롬프트 메인 함수
 				} else if(option_r && !is_endtime) { // -r 옵션이 주어지고, END_TIME이 존재하지 않는 경우
 					fprintf(stderr, "%s: END_TIME doesn't exist\n", command.argv[0]);
 					break;
-				} else if(reserv_t < current_t) { // END_TIME이 올바르지 않을 경우
-					fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
-					break;
 				}
 
-				head = make_list(target_path); // 파일 목록 구조체 생성
+				strcpy(thread.path, target_path);
+				thread.option_r = option_r;
+				thread.option_i = option_i;
 
-				//if(!move_trash(head))
-				//	break;
-				free_list(head);
+				if(is_endtime) { // END_TIME이 존재할 경우
+					if(pthread_create(&tid, NULL, wait_thread, (void*)&thread) != 0) // 스레드 생성
+						fprintf(stderr, "%s: pthread_create error\n", command.argv[0]);	
+				} else { // END_TIME이 존재하지 않을 경우
+					head = make_list(target_path); // 파일 목록 구조체 생성
+					move_trash(head, option_i);
+					free_list(head);
+				}
 				break;
 
 			case SIZE:
@@ -144,8 +157,9 @@ void prompt(void) // 프롬프트 메인 함수
 				number = true;
 				is_invalid = false;
 				is_filename = false;
+				option_d = false;
 
-				if(command.argc < 2) { // FILE_NAME이 주어지지 않은 경우
+				if(command.argc < 2) { // 인자 개수가 부족할 경우
 					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
@@ -199,12 +213,15 @@ void prompt(void) // 프롬프트 메인 함수
 				}
 
 				head = make_list(target_path); // 해당 경로의 파일 목록 구조체 생성
-				print_list_size(head, target_path, number, true); // 출력
+				print_list_size(head, target_path, number, option_d, true); // 출력
 				free_list(head);
 
 				break;
 
 			case RECOVER:
+
+				option_l = false;
+
 				break;
 
 			case TREE:
@@ -229,7 +246,6 @@ void prompt(void) // 프롬프트 메인 함수
 			default:
 				continue;
 		}
-		init_option();
 	}
 	fflush(stdout); // 표준 출력 스트림을 비움
 }
@@ -294,8 +310,7 @@ char *get_file_name(char *path) // 파일명 추출
 	return (char*)file_name;
 }
 
-
-int move_trash(file_node *head) // 파일을 휴지통 이동
+void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 {
 	FILE *fp;
 	char *file_name;
@@ -321,31 +336,82 @@ int move_trash(file_node *head) // 파일을 휴지통 이동
 
 	file_name = get_file_name(target_path); // 파일 이름 추출
 
-	// 파일 정보 생성
-	sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
-	printf("%s\n", target_path);
-	if((fp = fopen(target_path, "w+")) < 0) {
-		fprintf(stderr, "fopen error for %s\n", target_path);
-		return false;
+	if(option_i) {
+		if(S_ISDIR(head->attr.st_mode))
+			remove_directory(head->name);
+		else
+			unlink(head->name);
+	} else {
+		// 파일 정보 생성
+		sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
+		if((fp = fopen(target_path, "w+")) < 0) {
+			fprintf(stderr, "fopen error for %s\n", target_path);
+			return;
+		}
+
+		time(&cur_time);
+		time_info = *localtime(&cur_time);
+		time_format = make_time_format(time_info);
+		fprintf(fp, "[Trash info]\n%s\nD : %s\n", head->name, time_format);
+
+		time_info = *localtime(&(head->attr.st_mtime));
+		time_format = make_time_format(time_info);
+		fprintf(fp, "M : %s\n", time_format);
+		fclose(fp);
+
+		// 파일 원본 이동
+		sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
+		rename(head->name, target_path); // 이동
+	}
+}
+
+void *wait_thread(void *arg) // 삭제 대기 스레드
+{
+	threads *tmp;
+	char path[BUFFER_SIZE];
+	int sec;
+	int option_r;
+	int option_i;
+	char input;
+	file_node* head;
+
+	// 메모리 변조 방지
+	tmp = (threads*)arg;
+	strcpy(path, tmp->path);
+	sec = tmp->sec;
+	option_r = tmp->option_r;
+	option_i = tmp->option_i;
+
+	sleep(sec); // 시간 대기
+
+	if(access(path, F_OK) < 0) { // 파일이 존재하지 않을 경우
+		fprintf(stderr, "delete: access error for %s\n", path);
+		pthread_exit(NULL);
 	}
 
-	time(&cur_time);
-	time_info = *localtime(&cur_time);
-	time_format = make_time_format(time_info);
-	fprintf(fp, "[Trash info]\n%s\nD : %s\n", head->name, time_format);
+	head = make_list(path); // 파일 목록 구조체 생성
 
-	time_info = *localtime(&(head->attr.st_mtime));
-	time_format = make_time_format(time_info);
-	fprintf(fp, "M : %s\n", time_format);
-	fclose(fp);
+	if(option_r) { // -r옵션이 존재할 경우
+			fflush(stdout);
+			fputs("\nDelete [y/n]?", stdout);
+			input = fgetc(stdin);
+			switch(input) {
+				case 'y':
+					move_trash(head, option_i);
+					break;
+				case 'n':
+					break;
+				default:
+					fputs("delete: invalid input, thread was being aborted\n", stdout);
+					break;
+		}
+	} else 
+		move_trash(head, option_i);
 
-
-	// 파일 원본 이동
-	sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
-	printf("%s\n", target_path);
-	rename(head->name, target_path); // 이동
-	return true;
+	free_list(head);
+	pthread_exit(NULL);
 }
+
 
 struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 {
@@ -357,9 +423,10 @@ struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 	sscanf(time, "%d:%d", &hour, &min);
 
 	// 시간 구조체 파싱 예외
-	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60) 
+	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60) {
+		printf("시간 에러다!\n");
 		return tmp;
-	else {
+	} else {
 		tmp.tm_year = year - 1900;
 		tmp.tm_mon = month - 1;
 		tmp.tm_mday = day;
@@ -395,14 +462,14 @@ void remove_directory(const char *path) // 디렉토리 삭제
 		if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우 재귀적으로 제거
 			remove_directory(tmp);
 		else 
-			unlink(tmp); // rename함수 사용할 것
+			unlink(tmp);
 	}
-
 	closedir(dp);
+	rmdir(path);
 }
 
 
-void print_list_size(file_node *head, char *path, int number, int op_switch) // 지정 파일 상대 경로 및 크기 출력
+void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch) // 지정 파일 상대 경로 및 크기 출력
 {
 	char *relative_path;
 	file_node *now;
@@ -424,7 +491,7 @@ void print_list_size(file_node *head, char *path, int number, int op_switch) // 
 		op_switch = false;
 
 		if(now->child != NULL) // 하위 디렉토리 파일들이 존재하면 
-			print_list_size(now->child, path, number - 1, op_switch); // 하위 디렉토리 파일 출력 
+			print_list_size(now->child, path, number - 1, option_d, op_switch); // 하위 디렉토리 파일 출력 
 
 		if(now->next != NULL) // 같은 레벨에 파일들이 더 존재할 경우
 			now = now->next;
@@ -524,14 +591,6 @@ void to_lower_case(char *str) // 문자열 소문자 변환
 		}
 		i++;
 	}
-}
-
-void init_option(void) // 옵션 확인 초기화
-{
-	option_i = false;
-	option_r = false;
-	option_d = false;
-	option_l = false;
 }
 
 void free_command(commands command) // 명령행 구조체 초기화

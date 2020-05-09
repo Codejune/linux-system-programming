@@ -9,6 +9,9 @@ int main(void) // 모니터링 메인 함수
 {
 	FILE *fp; // log.txt 파일 구조체
 
+	// 프로세스 이름 변경
+	//prctl(PR_SET_NAME, "ssu_mntr-daemon", NULL, NULL, NULL);
+
 	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK);
 	sprintf(log_path, "%s/%s", pwd, LOG);
@@ -21,6 +24,7 @@ int main(void) // 모니터링 메인 함수
 		exit(1);
 	}
 	fclose(fp);
+
 
 	set_daemon_process();
 	monitoring();

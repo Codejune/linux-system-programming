@@ -16,10 +16,8 @@ int main(void) // 프로세스 운영 메인 함수
 	if(daemon_pid == 0) 
 		execl("./monitoring", "", (char*)0);
 	// 부모 프로세스: 프롬프트
-	else {
-		printf("child pid : %d\n", daemon_pid);
+	else 
 		prompt();
-	}
 
 	// 모니터링 프로세스 종료(미구현)
 	kill(daemon_pid + 1, SIGKILL); // SIGKILL(LINUX), KILL(MAC) == 9
