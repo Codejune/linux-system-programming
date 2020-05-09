@@ -20,14 +20,14 @@ void prompt(void) // 프롬프트 메인 함수
 	int idx;
 
 	// DELETE
-	pthread_t tid;
-	threads thread;
+	pid_t pid;
 	struct tm reserv_tm;
 	time_t current_t;
 	time_t reserv_t;
 	int is_endtime;
 	int option_i;
 	int option_r;
+	int sec;
 
 	// SIZE
 	int number;
@@ -39,13 +39,17 @@ void prompt(void) // 프롬프트 메인 함수
 	// TREE
 	int level_check[BUFFER_SIZE];
 
+	pid = getpid();
 	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK); // 모니터링 디렉토리 경로 추출
 
 	while (command_type != EXIT) {
 
-		fputs(PROMPT, stdout); // 프롬프트 라인 출력, 20162448> 
-		fgets(command_line, sizeof(command_line), stdin); // 실행 명령 입력
+		if(pid != getpid())
+			break;
+
+		fputs(PROMPT, stdout);
+		fgets(command_line, MAX_BUFFER_SIZE, stdin); // 실행 명령 입력
 		strcpy(command_line, ltrim(rtrim(command_line))); // 실행 명령 좌우 공백 지우기
 		command = make_command_token(command_line); 
 		command_type = get_command_type(command.argv[0]); // 명령 타입 구분
@@ -117,7 +121,7 @@ void prompt(void) // 프롬프트 메인 함수
 						current_t = time(NULL);
 						reserv_tm = get_tm(command.argv[idx], command.argv[idx + 1]);
 						reserv_t = mktime(&reserv_tm);
-						if((thread.sec = difftime(reserv_t, current_t)) < 0) {
+						if((sec = difftime(reserv_t, current_t)) < 0) {
 							fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
 							is_invalid = true;
 							break;
@@ -138,14 +142,9 @@ void prompt(void) // 프롬프트 메인 함수
 					break;
 				}
 
-				strcpy(thread.path, target_path);
-				thread.option_r = option_r;
-				thread.option_i = option_i;
-
-				if(is_endtime) { // END_TIME이 존재할 경우
-					if(pthread_create(&tid, NULL, wait_thread, (void*)&thread) != 0) // 스레드 생성
-						fprintf(stderr, "%s: pthread_create error\n", command.argv[0]);	
-				} else { // END_TIME이 존재하지 않을 경우
+				if(is_endtime) // END_TIME이 존재할 경우
+					wait_thread(target_path, sec, option_r, option_i);
+				else { // END_TIME이 존재하지 않을 경우
 					head = make_list(target_path); // 파일 목록 구조체 생성
 					move_trash(head, option_i);
 					free_list(head);
@@ -365,38 +364,32 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 	}
 }
 
-void *wait_thread(void *arg) // 삭제 대기 스레드
+void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대기 스레드
 {
-	threads *tmp;
-	char path[BUFFER_SIZE];
-	int sec;
-	int option_r;
-	int option_i;
-	char input;
 	file_node* head;
+	pid_t pid;
+	char input;
 
-	// 메모리 변조 방지
-	tmp = (threads*)arg;
-	strcpy(path, tmp->path);
-	sec = tmp->sec;
-	option_r = tmp->option_r;
-	option_i = tmp->option_i;
+	if((pid = fork()) < 0) {
+		fprintf(stderr, "delete: fork error\n");
+		return;
+	} else if(pid == 0) {
 
-	sleep(sec); // 시간 대기
+		sleep(sec); // 시간 대기
 
-	if(access(path, F_OK) < 0) { // 파일이 존재하지 않을 경우
-		fprintf(stderr, "delete: access error for %s\n", path);
-		pthread_exit(NULL);
-	}
+		if(access(path, F_OK) < 0) { // 파일이 존재하지 않을 경우
+			fprintf(stderr, "delete: access error for %s\n", path);
+			return;
+		}
 
-	head = make_list(path); // 파일 목록 구조체 생성
-
-	if(option_r) { // -r옵션이 존재할 경우
-			fflush(stdout);
-			fputs("\nDelete [y/n]?", stdout);
-			input = fgetc(stdin);
+		head = make_list(path); // 파일 목록 구조체 생성
+		if(option_r) { // -r옵션이 존재할 경우
+			fputs("\nDelete [y/n]? ", stdout);
+			input = getchar();
+			getchar();
 			switch(input) {
 				case 'y':
+					fputs(PROMPT, stdout);
 					move_trash(head, option_i);
 					break;
 				case 'n':
@@ -404,12 +397,11 @@ void *wait_thread(void *arg) // 삭제 대기 스레드
 				default:
 					fputs("delete: invalid input, thread was being aborted\n", stdout);
 					break;
-		}
-	} else 
-		move_trash(head, option_i);
-
-	free_list(head);
-	pthread_exit(NULL);
+			}
+		} else 
+			move_trash(head, option_i);
+		free_list(head);
+	}
 }
 
 

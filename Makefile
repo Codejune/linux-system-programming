@@ -1,6 +1,6 @@
 ssu_mntr: support.o monitoring.o prompt.o ssu_mntr.o common.h monitoring.h prompt.h
 	gcc -o monitoring monitoring.o support.o
-	gcc -o ssu_mntr ssu_mntr.o prompt.o support.o -pthread
+	gcc -o ssu_mntr ssu_mntr.o prompt.o support.o -lpthread
 	rm *.o
 #gcc -o prompt prompt.o support.o
 

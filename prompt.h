@@ -5,18 +5,11 @@ typedef struct ssu_commandToken { // 프롬프트 명령어 구조체
 	int argc; // 명령행 인자 개수
 } commands;
 
-typedef struct ssu_thread {
-	char path[BUFFER_SIZE];
-	int sec;
-	int option_r;
-	int option_i;
-} threads; 
-
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
 char *get_file_name(char *path); // 파일명 추출
 void move_trash(file_node *head, int option_i); // 파일 휴지통 이동
-void *wait_thread(void *arg); // 삭제 대기 스레드
+void wait_thread(char *path, int sec, int option_r, int option_i); // 삭제 대기 스레드
 struct tm get_tm(char *date, char *time); // 시간 구조체 획득
 void remove_directory(const char *path); // 디렉토리 삭제
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch); // 지정 파일 상대 경로 및 크기 출력
