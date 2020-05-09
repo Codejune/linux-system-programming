@@ -149,6 +149,10 @@ void prompt(void) // 프롬프트 메인 함수
 					move_trash(head, option_i);
 					free_list(head);
 				}
+
+				while(check_trash_info())
+					delete_trash_oldest();
+
 				break;
 
 			case SIZE:
@@ -460,6 +464,89 @@ void remove_directory(const char *path) // 디렉토리 삭제
 	rmdir(path);
 }
 
+int check_trash_info(void) // 휴지통 파일 정보 디렉토리 크기 확인
+{	
+	char trash_info_path[BUFFER_SIZE];
+	file_node *head;
+	int size;
+
+	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
+	head = make_list(trash_info_path);
+	size = head->size;
+	free_list(head);
+
+	if(head->size > MAX_INFO_SIZE)
+		return true;
+	return false;
+}
+
+void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일 제거
+{ 
+	char trash_info_path[BUFFER_SIZE];
+	char old_info[BUFFER_SIZE];
+	char old_path[BUFFER_SIZE]; // 가장 오래된 파일 경로
+	char date[BUFFER_SIZE];
+	char time[BUFFER_SIZE];
+	char path[MAX_BUFFER_SIZE];
+	char tmp[MAX_BUFFER_SIZE];
+	struct tm tmp_tm;
+	FILE *fp;
+	time_t old_sec; // 가장 오래된 파일 삭제 시간
+	time_t now_sec;
+	int file_count;
+	struct stat statbuf;
+	struct dirent **namelist;
+	int is_first;
+	int i;
+
+	is_first = true;
+	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
+	chdir(trash_info_path);
+
+	file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
+	for(i = 0; i < file_count; i++) { // 정보 파일이 저장된 디렉토리 탐색
+
+		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) 
+				continue;
+
+		sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로
+
+		// 정보 파일에서 데이터 추출
+		if((fp = fopen(tmp, "r+")) < 0)
+			fprintf(stderr, "fopen error for %s\n", tmp);
+		fseek(fp, 13, SEEK_SET);
+		fscanf(fp, "%s\n", path); // 파일 경로 획득
+		fscanf(fp, "D : %s %s\n", date, time); // 삭제 시간 획득
+		fclose(fp);
+
+		tmp_tm = get_tm(date, time);
+		now_sec = mktime(&tmp_tm);
+		sprintf(path, "%s/%s/%s", pwd, TRASH_FILES, get_file_name(path));
+
+		if(is_first) {
+			old_sec = now_sec;
+			strcpy(old_path, path);
+			strcpy(old_info, tmp); // 정보 파일 경로 변경
+			is_first = false;
+		} else {
+			if(now_sec < old_sec) {
+				old_sec = now_sec;
+				strcpy(old_path, path);
+				strcpy(old_info, tmp); // 정보 파일 경로 변경
+			}
+		}
+	}
+	printf("old_path:%s\nold_info:%s\ndate:%s\ntime:%s\n", path, tmp, date, time);
+
+	stat(old_path, &statbuf); // 가장 오래된 파일 정보 획득
+
+	if(S_ISDIR(statbuf.st_mode)) // 디렉토리일 경우
+		remove_directory(old_path);
+	else // 파일일 경우
+		unlink(old_path);
+	unlink(old_info);
+	chdir(pwd);
+}
 
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch) // 지정 파일 상대 경로 및 크기 출력
 {

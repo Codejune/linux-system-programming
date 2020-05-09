@@ -51,9 +51,10 @@
 	#define UNKNOWN 7
 #endif
 
-// 버퍼
+// 크기
 #define BUFFER_SIZE     256
 #define MAX_BUFFER_SIZE 1024
+#define MAX_INFO_SIZE   2048
 
 // 디렉토리
 #define CHECK       "check"
