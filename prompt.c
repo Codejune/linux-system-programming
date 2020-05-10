@@ -35,13 +35,15 @@ void prompt(void) // 프롬프트 메인 함수
 
 	// RECOVER
 	int option_l;
+	char trash_files_path[BUFFER_SIZE];
+	char file_name[BUFFER_SIZE];
 
 	// TREE
 	int level_check[BUFFER_SIZE];
 
 	pid = getpid();
 	getcwd(pwd, BUFFER_SIZE);
-	sprintf(check_path, "%s/%s", pwd, CHECK); // 모니터링 디렉토리 경로 추출
+	sprintf(check_path, "%s/%s", pwd, CHECK); // 모니터링 디렉토리 경로 
 
 	while (command_type != EXIT) {
 
@@ -225,6 +227,53 @@ void prompt(void) // 프롬프트 메인 함수
 
 				option_l = false;
 
+				if(command.argc < 2) { // 인자 개수가 부족할 경우
+					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
+					continue;
+				}
+
+				// 명령행 인자 파싱 및 에러 검출 순위
+				// 1. 옵션
+				// 2. 파일명
+				for(idx = 1; idx < command.argc; idx++) {
+
+					//옵션 파싱
+					if(command.argv[idx][0] == '-') {
+						if(command.argv[idx][1] == 'l') // -l 옵션
+							option_l = true;
+						else {
+							fprintf(stderr, "%s: invalid option %c\n", command.argv[0], command.argv[idx][1]);
+							is_invalid = true;
+							break;
+						}
+						continue;
+					}
+
+					// FILE_NAME 파싱
+					if(!is_filename) {
+						sprintf(trash_files_path, "%s/%s/%s", pwd, TRASH_FILES, command.argv[idx]);
+						if(access(trash_files_path, F_OK) < 0) { // 파일이 존재하지 않을 경우
+							sprintf(trash_files_path, "%s/%s/1_%s", pwd, TRASH_FILES, command.argv[idx]);
+							if(access(trash_files_path, F_OK) < 0) { // 중복 파일 존재 유무 확인
+								fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[idx]);
+								is_invalid = true;
+								break;
+							}
+						}
+						strcpy(file_name, command.argv[idx]);
+						is_filename = true;
+						continue;
+					}
+				}
+
+				if(is_invalid) // 파싱 중 에러 발견 시
+					break;
+				else if(!is_filename) {
+					fprintf(stderr, "%s: invalid input\n", command.argv[0]);
+					break;
+				}
+
+				restore_file(file_name, option_l);
 				break;
 
 			case TREE:
@@ -259,21 +308,21 @@ commands make_command_token(char *command_line) // 명령어 전체 문장 토�
 	char *tmp;
 	char *command;
 
-	result.argv = (char **)malloc(sizeof(char*) * BUFFER_SIZE);
+	result.argv = (char **)calloc(BUFFER_SIZE, sizeof(char*));
 	result.argc = 0;
 
 	if((command = strtok(command_line, " ")) == NULL) { // 엔터만 쳤을 경우
-		result.argv[result.argc] = (char *)malloc(sizeof(char));
+		result.argv[result.argc] = (char *)calloc(true, sizeof(char));
 		strcpy(result.argv[result.argc], "");
 		return result;
 	}
 
 	to_lower_case(command); // 명령어 소문자화
-	result.argv[result.argc] = (char *)malloc(sizeof(char) * strlen(command)); // 메모리 공간 할당
+	result.argv[result.argc] = (char *)calloc(strlen(command), sizeof(char)); // 메모리 공간 할당
 	strcpy(result.argv[result.argc++], command); // 토큰 배열에 복사
 
 	while((tmp = strtok(NULL, " ")) != NULL) { // 나머지 인자 복사
-		result.argv[result.argc] = (char *)malloc(sizeof(char) * strlen(command)); // 메모리 공간 할당
+		result.argv[result.argc] = (char *)calloc(strlen(command), sizeof(char)); // 메모리 공간 할당
 		strcpy(result.argv[result.argc++], tmp); // 토큰 배열에 복사
 	}
 
@@ -421,14 +470,15 @@ struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 {
 	struct tm tmp;
 	int year, month, day;
-	int hour, min;
+	int hour, min, sec;
 
 	sscanf(date, "%d-%d-%d", &year, &month, &day);
-	sscanf(time, "%d:%d", &hour, &min);
+	sscanf(time, "%d:%d:%d", &hour, &min, &sec);
 
+
+	printf("%s %s\n", date, time);
 	// 시간 구조체 파싱 예외
-	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60) {
-		printf("시간 에러다!\n");
+	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60 && sec < 0 || sec > 60) {
 		return tmp;
 	} else {
 		tmp.tm_year = year - 1900;
@@ -436,7 +486,7 @@ struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 		tmp.tm_mday = day;
 		tmp.tm_hour = hour;
 		tmp.tm_min = min;
-		tmp.tm_sec = 0;
+		tmp.tm_sec = sec;
 	}
 
 	return tmp;
@@ -521,7 +571,7 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 
 		// 정보 파일에서 데이터 추출
 		if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드로 열기
-			fprintf(stderr, "fopen error for %s\n", tmp);
+			fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
 			continue;
 		}
 		fseek(fp, 13, SEEK_SET); // 헤더 생략
@@ -637,6 +687,80 @@ void print_list_size(file_node *head, char *path, int number, int option_d, int 
 			now = now->next;
 		else break; // 탐색 종료
 	}
+}
+
+void restore_file(const char *file_name, int option_l) // 휴지통 파일 복원
+{
+	char trash_info_path[BUFFER_SIZE];
+	char tmp[MAX_BUFFER_SIZE];
+	char date[BUFFER_SIZE];
+	char time[BUFFER_SIZE];
+	struct dirent **namelist;
+	int file_count;
+	FILE *fp;
+	file_infos file_info[50];
+	int idx;
+	int i;
+
+	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
+
+	if(option_l) { // 오래된 순으로 출력
+
+		idx = 0;
+		file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
+
+		for(i = 0; i < file_count; i++) {
+			
+			if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
+				continue;
+
+			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name);
+			
+			if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드로 열기
+				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
+				continue;
+			}
+			fseek(fp, 13, SEEK_SET); // 헤더 생략
+			// 파일 이름 추출
+			fscanf(fp, "%s\n", file_info[idx].path);
+
+			// 파일 시간 정보 추출
+			fscanf(fp, "D : %s %s\n", date, time); // 삭제 시간 
+			file_info[idx].d_tm = get_tm(date, time);
+			//fscanf(fp, "M : %s %s\n", date, time); // 수정 시간
+			//file_info[idx].m_tm = get_tm(date, time);
+			idx++;
+			fclose(fp);
+			
+		}
+
+		// 오름차순 정렬 
+		sort_file_info(file_info, idx);
+
+		for(i = 0; i < idx; i++) // 출력
+			printf("%d. %-10s %s\n", i + 1, get_file_name(file_info[i].path), make_time_format(file_info[i].d_tm)); 
+	} 
+
+	//free(file_info);
+}
+
+void sort_file_info(file_infos *file_info, int idx) // 삭제 시간 오름차순 정렬
+{
+	int i, j;
+	char tmp_path[BUFFER_SIZE];
+	struct tm tmp_tm;
+
+	for(i = 0; i < idx; i++)
+		for(j = i + 1; j < idx; j++)
+			if(mktime(&file_info[i].d_tm) > mktime(&file_info[j].d_tm)) {
+				strcpy(tmp_path, file_info[i].path);
+				strcpy(file_info[i].path, file_info[j].path);
+				strcpy(file_info[j].path, tmp_path);
+
+				tmp_tm = file_info[i].d_tm;
+				file_info[i].d_tm = file_info[j].d_tm;
+				file_info[j].d_tm = tmp_tm;
+			}
 }
 
 void print_list_tree(file_node *head, int level, int level_check[], int is_root) // 모니터링 파일 목록 트리 출력

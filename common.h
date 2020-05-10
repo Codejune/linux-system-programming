@@ -52,6 +52,8 @@
 #endif
 
 // 크기
+#define DATE_SIZE       10
+#define TIME_SIZE       8
 #define BUFFER_SIZE     256
 #define MAX_BUFFER_SIZE 1024
 #define MAX_INFO_SIZE   2048

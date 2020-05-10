@@ -5,6 +5,12 @@ typedef struct ssu_commandToken { // 프롬프트 명령어 구조체
 	int argc; // 명령행 인자 개수
 } commands;
 
+typedef struct ssu_fileinfo {
+	char path[BUFFER_SIZE];
+	struct tm d_tm;
+	struct tm m_tm;
+} file_infos;
+
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
 int get_command_type(char *command); // COMMAND 타입 확인 및 반환
 char *get_file_name(char *path); // 파일명 추출
@@ -16,6 +22,8 @@ int check_trash_info(void); // 휴지통 파일 정보 디렉토리 크기 확�
 void delete_trash_oldest(void); // 휴지통에서 가장 오래 삭제된 파일 제거
 int find_trash_file(const char *file_name); // 휴지통 중복 파일 탐색
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch); // 지정 파일 상대 경로 및 크기 출력
+void restore_file(const char *file_name, int option_l); // 휴지통 파일 복원
+void sort_file_info(file_infos *file_info, int file_count); // 삭제 시간 오름차순 정렬
 void print_list_tree(file_node *head, int level, int level_check[], int is_root); // 모니터링 파일 목록 트리 출력
 void print_indent(int level, int level_check[]); // 트리 출력 보조 함수
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거

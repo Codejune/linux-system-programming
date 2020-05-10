@@ -2,7 +2,7 @@
 
 file_node *make_node(void) // 노드 생성
 {
-	file_node *tmp = malloc(sizeof(file_node));
+	file_node *tmp = calloc(true, sizeof(file_node));
 
 	memset(tmp->name, 0, BUFFER_SIZE);
 	tmp->next = NULL;
