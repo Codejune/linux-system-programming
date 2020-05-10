@@ -178,7 +178,11 @@ void prompt(void) // 프롬프트 메인 함수
 					if(command.argv[idx][0] == '-') {
 						if(command.argv[idx][1] == 'd') { // -d 옵션
 							option_d = true;
-							if((number = atoi(command.argv[++idx])) == 0) { // NUMBER 
+							if(idx + 1 == command.argc) {
+								fprintf(stderr, "%s: NUMBER doesn't exist\n", command.argv[0]);
+								is_invalid = true;
+								break;
+							} else if((number = atoi(command.argv[++idx])) == 0) { // NUMBER 
 								fprintf(stderr, "%s: invalid input NUMBER\n", command.argv[0]);
 								is_invalid = true;
 								break;
@@ -1024,10 +1028,12 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 
 		if(is_root) { // 루트 디렉토리 노드일 경우 디렉토리 이름만 출력 후 하위 파일 노드로 이동
 			printf("%s\n", file_name); // 파일명 출력
-			if(now->child != NULL)
+
+			if(now->child != NULL) // 모니터링 디렉토리 하위에 파일이 존재하는 경우
 				now = now->child; // 하위 파일 노드로 이동
-			else 
-				break;
+			else  // 모니터링 디렉토리 하위에 파일이 존재하지 않는 경우
+				break; 
+
 			is_root = false; // 루트 확인 해제
 			level_check[level++] = true; // 레벨 증가
 			continue;
