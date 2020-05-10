@@ -24,6 +24,7 @@ void delete_trash_oldest(void); // 휴지통에서 가장 오래 삭제된 파�
 int find_trash_file(const char *file_name); // 휴지통 중복 파일 탐색
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch); // 지정 파일 상대 경로 및 크기 출력
 void restore_file(const char *file_name, int option_l); // 휴지통 파일 복원
+char *get_file_path(char *path, const char *file_name); // 파일 경로 추출
 void sort_trash_info(const char *file_name, int idx, int delete_idx); // 삭제 후 중복 파일 번호 재정렬 
 void sort_info_oldest(file_infos *file_info, int idx); // 삭제 시간 오름차순 정렬
 void sort_info_order(file_infos *file_info, int idx); // 중복 파일 오름차순 정렬

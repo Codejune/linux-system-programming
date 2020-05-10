@@ -261,7 +261,7 @@ void prompt(void) // 프롬프트 메인 함수
 								break;
 							}
 						}
-						
+
 						strcpy(file_name, command.argv[idx]);
 						is_filename = true;
 						continue;
@@ -609,6 +609,7 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 		unlink(old_path);
 	unlink(old_info);
 	chdir(pwd);
+	free(namelist);
 }
 
 int find_trash_file(const char *file_name) // 휴지통 중복 파일 탐색
@@ -642,6 +643,7 @@ int find_trash_file(const char *file_name) // 휴지통 중복 파일 탐색
 			sprintf(trash_info_path, "%s/%s.txt", trash_info_path, file_name);
 			rename(trash_info_path, target_path); // 정보 파일 이름 변경
 			chdir(pwd);
+			free(namelist);
 			return true + 1;
 		}
 
@@ -649,6 +651,8 @@ int find_trash_file(const char *file_name) // 휴지통 중복 파일 탐색
 		if(tmp > false && !strcmp(target_path, file_name)) // 다수 중복되는 경우
 			overlap_count++; 
 	}
+
+	free(namelist);
 
 	if(overlap_count > 0) {
 		chdir(pwd);
@@ -695,13 +699,15 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	char tmp[MAX_BUFFER_SIZE];
 	char date[BUFFER_SIZE];
 	char time[BUFFER_SIZE];
+	char *temp;
 	struct dirent **namelist;
 	int file_count;
 	FILE *fp;
 	file_infos file_info[50];
 	int idx;
 	int overlap;
-	int i;
+	int is_exist;
+	int i, j;
 
 	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
 
@@ -710,6 +716,8 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		idx = 0;
 		file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
 		for(i = 0; i < file_count; i++) {
+
+			printf("%s\n", namelist[i]->d_name);
 
 			if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
 				continue;
@@ -730,35 +738,60 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			idx++;
 			fclose(fp);
 		}
-
+		free(namelist);
 		// 오름차순 정렬 
 		sort_info_oldest(file_info, idx);
 		for(i = 0; i < idx; i++) // 출력
 			printf("%d. %-10s %s\n", i + 1, get_file_name(file_info[i].path), make_time_format(file_info[i].d_tm)); 
 	} 
 
+	// 파일 복원
 	idx = 0;
 	file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
-	for(i = 0; i < file_count; i++) {
+
+	for(i = 0; i < file_count; i++) { // 탐색 시작
 
 		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
 			continue;
 
-		if(!strcmp(file_name, namelist[i]->d_name)) { // 중복되는 파일이 존재하지 않을 경우
-
-			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name);
-
-			if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드로 열기
+		sscanf(namelist[i]->d_name, "%[^((?!.txt)/)*$]", tmp);
+		if(!strcmp(file_name, tmp)) { // 휴지통에 중복없이 한개만 존재할 경우
+			sprintf(tmp, "%s/%s.txt", trash_info_path, file_name); // 정보 파일 경로 생성
+			if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드 열기
 				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
 				continue;
 			}
+			// 정보 탐색
 			fseek(fp, 13, SEEK_SET); // 헤더 생략
-			// 파일 이름 추출
-			fscanf(fp, "%s\n", file_info[idx].path);
+			fscanf(fp, "%s\n", file_info[idx].path); // 원본 파일 경로 추출
 			fclose(fp);
-			unlink(tmp);
-			sprintf(tmp, "%s/%s/%s", pwd, TRASH_FILES, file_name);
-			rename(tmp, file_info[idx].path); // 파일 복원
+
+			if(access(file_info[idx].path, F_OK) < 0) { // 복원할 곳에 파일이 존재하지 않을 경우
+
+				unlink(tmp); // 정보 파일 삭제
+				sprintf(tmp, "%s/%s/%s", pwd, TRASH_FILES, file_name); // 복원 경로 생성
+				rename(tmp, file_info[idx].path); // 원본 파일 복원
+
+			} else { // 복원할 곳에 파일이 존재하는 경우
+
+				j = 1;
+				temp = get_file_path(file_info[idx].path, file_name); // 복원 경로 생성
+
+				while(true) { 
+					sprintf(tmp, "%s%d_%s", temp, j, file_name);
+					if(access(tmp, F_OK) < 0) {
+						sprintf(trash_info_path, "%s/%s/%s", pwd, TRASH_FILES, file_name);
+						rename(trash_info_path, tmp);
+						sprintf(trash_info_path, "%s/%s/%s.txt", pwd, TRASH_INFO, file_name);
+						unlink(trash_info_path);
+						free(namelist);
+						return;
+					}
+					j++;
+				}
+
+			}
+			free(namelist);
 			return;
 		}
 
@@ -785,6 +818,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			idx++;
 		}
 	}
+	free(namelist);
 
 	sort_info_order(file_info, idx);
 
@@ -796,15 +830,51 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	getchar();
 	i -= 48;
 
-	// 정보 파일 삭제 
-	sprintf(tmp, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, i, file_name);
-	unlink(tmp);
-	// 원본 파일 복구
-	sprintf(tmp, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
-	rename(tmp, file_info[i - 1].path);
+	if(access(file_info[i].path, F_OK) < 0) { // 복원할 곳에 파일이 존재하지 않을 경우
+		// 정보 파일 삭제 
+		sprintf(tmp, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, i, file_name);
+		unlink(tmp);
+		// 원본 파일 복구
+		sprintf(tmp, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
+		rename(tmp, file_info[i - 1].path);
+		free(namelist);
+	} else { // 복원할 곳에 파일이 존재하는 경우
 
+		j = 1;
+		temp = get_file_path(file_info[i].path, file_name); // 복원 경로 생성
+
+		while(true) { 
+			sprintf(tmp, "%s%d_%s", temp, j, file_name);
+			if(access(tmp, F_OK) < 0) {
+				sprintf(trash_info_path, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
+				rename(trash_info_path, tmp);
+				sprintf(trash_info_path, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, i, file_name);
+				unlink(trash_info_path);
+				free(namelist);
+				return;
+			}
+			j++;
+		}
+
+	}
 	// 중복 정보 파일 재정렬
-	sort_trash_info(file_name, idx - 1, i + 1);
+	sort_trash_info(file_name, idx - 1, i);
+}
+
+char *get_file_path(char *path, const char *file_name) // 파일 경로 추출
+{
+	char *ptr;
+	static char file_path[BUFFER_SIZE];
+	char *tmp;
+
+	ptr = strstr(path, file_name);
+	while(ptr != NULL) {
+		tmp = ptr;
+		ptr = strstr(ptr+1, file_name);
+	}
+	strncpy(file_path, path, tmp - path);
+
+	return (char*)file_path;
 }
 
 void sort_info_oldest(file_infos *file_info, int idx) // 중복 파일 구조체 삭제 시간 오름차순 정렬
@@ -865,13 +935,25 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
 	sprintf(trash_files_path, "%s/%s", pwd, TRASH_FILES);
 
-	if(i == 1) { // 중복 파일이 더이상 존재하지 않는 경우
+	if(idx == 1 && delete_idx == 1) { // 중복 파일이 더이상 존재하지 않는 경우
 		chdir(TRASH_INFO);
 		sprintf(tmp1, "2_%s.txt", file_name);
-		rename(tmp1, file_name);
+		sprintf(tmp2, "%s.txt", file_name);
+		rename(tmp1, tmp2);
 		chdir(pwd);
 		chdir(TRASH_FILES);
 		sprintf(tmp1, "2_%s", file_name);
+		rename(tmp1, file_name);
+		chdir(pwd);
+		return;
+	} else if(idx == 1 && delete_idx == 2) {
+		chdir(TRASH_INFO);
+		sprintf(tmp1, "1_%s.txt", file_name);
+		sprintf(tmp2, "%s.txt", file_name);
+		rename(tmp1, tmp2);
+		chdir(pwd);
+		chdir(TRASH_FILES);
+		sprintf(tmp1, "1_%s", file_name);
 		rename(tmp1, file_name);
 		chdir(pwd);
 		return;
@@ -895,9 +977,9 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 				sprintf(tmp2, "%d_%s", overlap - 1, file_name);
 				rename(tmp1, tmp2);
 				chdir(pwd);
-
 			}
 		}
+		free(namelist);
 	}
 }
 
