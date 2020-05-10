@@ -123,7 +123,9 @@ void prompt(void) // 프롬프트 메인 함수
 						current_t = time(NULL);
 						reserv_tm = get_tm(command.argv[idx], command.argv[idx + 1]);
 						reserv_t = mktime(&reserv_tm);
+						printf("%d %d\n", current_t, reserv_t);
 						if((sec = difftime(reserv_t, current_t)) < 0) {
+							printf("%d\n", sec);
 							fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
 							is_invalid = true;
 							break;
@@ -477,9 +479,8 @@ struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 	sscanf(date, "%d-%d-%d", &year, &month, &day);
 	sscanf(time, "%d:%d:%d", &hour, &min, &sec);
 
-
 	// 시간 구조체 파싱 예외
-	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60 || sec < 0 || sec > 60) 
+	if(year < 0 || month < 0 || month > 12 || day < 0 || day > 31 ||  hour < 0 || hour > 24 || min < 0 || min > 60 || sec < 0 || sec > 60)
 		return tmp;
 	else {
 		tmp.tm_year = year - 1900;

@@ -10,7 +10,7 @@
 #include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <sys/prctl.h>
+//#include <sys/prctl.h>
 
 // 불 타입
 #ifndef true
