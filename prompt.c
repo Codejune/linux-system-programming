@@ -1,6 +1,8 @@
 #include "prompt.h"
 
 char pwd[BUFFER_SIZE];
+int in_fd;
+int out_fd;
 
 void prompt(void) // 프롬프트 메인 함수
 {
@@ -42,6 +44,11 @@ void prompt(void) // 프롬프트 메인 함수
 	int level_check[BUFFER_SIZE];
 
 	pid = getpid();
+	// 사용자 정의 시그널 
+	// SIGUSR1: 표준입출력 닫기
+	// SIGUSR2: 표준입출력 열기
+	signal(SIGUSR1, swap_stdin);
+	signal(SIGUSR2, swap_stdin);
 	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK); // 모니터링 디렉토리 경로 
 
@@ -434,8 +441,10 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대기 스레드
 {
 	file_node* head;
-	pid_t pid;
+	pid_t pid, ppid;
 	char input;
+
+	ppid = getpid();
 
 	if((pid = fork()) < 0) {
 		fprintf(stderr, "delete: fork error\n");
@@ -451,12 +460,12 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 
 		head = make_list(path); // 파일 목록 구조체 생성
 		if(option_r) { // -r옵션이 존재할 경우
+			kill(ppid, SIGUSR1);
 			fputs("\nDelete [y/n]? ", stdout);
 			input = getchar();
 			getchar();
 			switch(input) {
 				case 'y':
-					fputs(PROMPT, stdout);
 					move_trash(head, option_i);
 					break;
 				case 'n':
@@ -465,12 +474,27 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 					fputs("delete: invalid input, thread was being aborted\n", stdout);
 					break;
 			}
+			kill(ppid, SIGUSR2);
 		} else 
 			move_trash(head, option_i);
 		free_list(head);
 	}
 }
 
+void swap_stdin(int signal_type){ // 시그널로 표준입출력 전환
+	switch(signal_type) {
+		case SIGUSR1:
+			in_fd = dup(0);
+			out_fd = dup(1);
+			close(0);
+			close(1);
+			break;
+		case SIGUSR2:
+			dup2(in_fd, 0);
+			dup2(out_fd, 1);
+			break;
+	}
+}
 
 struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 {
@@ -790,7 +814,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			} else { // b. 복원 지점에 똑같은 이름의 파일이 존재하는 경우
 
 				j = 1; // 중복 파일 카운트
-				
+
 				temp = get_file_path(file_info[idx].path, file_name); // 복원 지점 경로 추출, path/
 
 				while(true) { 
@@ -883,7 +907,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 				// 원본 파일 복원
 				sprintf(trash_files_path, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
 				rename(trash_files_path, tmp);
-				
+
 				break;
 			}
 			j++; // 중복 파일 카운트 증가
