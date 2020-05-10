@@ -6,6 +6,7 @@ typedef struct ssu_commandToken { // 프롬프트 명령어 구조체
 } commands;
 
 typedef struct ssu_fileinfo {
+	int num;
 	char path[BUFFER_SIZE];
 	struct tm d_tm;
 	struct tm m_tm;
@@ -23,7 +24,9 @@ void delete_trash_oldest(void); // 휴지통에서 가장 오래 삭제된 파�
 int find_trash_file(const char *file_name); // 휴지통 중복 파일 탐색
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch); // 지정 파일 상대 경로 및 크기 출력
 void restore_file(const char *file_name, int option_l); // 휴지통 파일 복원
-void sort_file_info(file_infos *file_info, int file_count); // 삭제 시간 오름차순 정렬
+void sort_trash_info(const char *file_name, int idx, int delete_idx); // 삭제 후 중복 파일 번호 재정렬 
+void sort_info_oldest(file_infos *file_info, int idx); // 삭제 시간 오름차순 정렬
+void sort_info_order(file_infos *file_info, int idx); // 중복 파일 오름차순 정렬
 void print_list_tree(file_node *head, int level, int level_check[], int is_root); // 모니터링 파일 목록 트리 출력
 void print_indent(int level, int level_check[]); // 트리 출력 보조 함수
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
