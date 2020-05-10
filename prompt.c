@@ -1024,7 +1024,10 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 
 		if(is_root) { // 루트 디렉토리 노드일 경우 디렉토리 이름만 출력 후 하위 파일 노드로 이동
 			printf("%s\n", file_name); // 파일명 출력
-			now = now->child; // 하위 파일 노드로 이동
+			if(now->child != NULL)
+				now = now->child; // 하위 파일 노드로 이동
+			else 
+				break;
 			is_root = false; // 루트 확인 해제
 			level_check[level++] = true; // 레벨 증가
 			continue;
