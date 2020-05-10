@@ -479,7 +479,7 @@ struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 
 
 	// 시간 구조체 파싱 예외
-	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60 && sec < 0 || sec > 60) 
+	if(month > 12 || month < 0 || day > 31 || day < 0 ||  hour > 24 || min < 0 || min > 60 || sec < 0 || sec > 60) 
 		return tmp;
 	else {
 		tmp.tm_year = year - 1900;
