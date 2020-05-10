@@ -696,6 +696,7 @@ void print_list_size(file_node *head, char *path, int number, int option_d, int 
 void restore_file(const char *file_name, int option_l) // 휴지통 파일 복원
 {
 	char trash_info_path[BUFFER_SIZE];
+	char trash_files_path[BUFFER_SIZE];
 	char tmp[MAX_BUFFER_SIZE];
 	char date[BUFFER_SIZE];
 	char time[BUFFER_SIZE];
@@ -710,103 +711,122 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	int i, j;
 
 	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
+	sprintf(trash_files_path, "%s/%s", pwd, TRASH_FILES);
 
-	if(option_l) { // 오래된 순으로 출력
+	if(option_l) { // -l 옵션
 
 		idx = 0;
-		file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
+
+		file_count = scandir(trash_info_path, &namelist, NULL, alphasort); // 파일 정보 디렉토리 탐색
 		for(i = 0; i < file_count; i++) {
 
-			printf("%s\n", namelist[i]->d_name);
-
-			if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
+			if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) // 상위 디렉토리 접근자 생략
 				continue;
 
-			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name);
+			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로 생성
 
-			if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드로 열기
+			if((fp = fopen(tmp, "r+")) < 0) { // 정보 파일 읽기 모드로 열기
 				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
 				continue;
 			}
-			fseek(fp, 13, SEEK_SET); // 헤더 생략
-			// 파일 이름 추출
+			fseek(fp, 13, SEEK_SET); // 정보 파일 제목 생략
+
+			// 파일 경로 추출
 			fscanf(fp, "%s\n", file_info[idx].path);
 
-			// 파일 시간 정보 추출
+			// 파일 삭제 시간 추출
 			fscanf(fp, "D : %s %s\n", date, time); // 삭제 시간 
-			file_info[idx].d_tm = get_tm(date, time);
-			idx++;
-			fclose(fp);
-		}
-		free(namelist);
-		// 오름차순 정렬 
-		sort_info_oldest(file_info, idx);
-		for(i = 0; i < idx; i++) // 출력
+			file_info[idx++].d_tm = get_tm(date, time);
+
+			fclose(fp); // 파일 닫기
+		} 
+
+		free(namelist); // 메모리 할당 해제
+		sort_info_oldest(file_info, idx); // 구조체 배열 삭제 시간 순 오름차순 정렬
+
+		for(i = 0; i < idx; i++)  // 출력
 			printf("%d. %-10s %s\n", i + 1, get_file_name(file_info[i].path), make_time_format(file_info[i].d_tm)); 
 	} 
 
 	// 파일 복원
+
 	idx = 0;
-	file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
 
-	for(i = 0; i < file_count; i++) { // 탐색 시작
+	file_count = scandir(trash_info_path, &namelist, NULL, alphasort); // 파일 정보 디렉토리 탐색
+	for(i = 0; i < file_count; i++) { 
 
-		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
+		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) // 상위 디렉토리 접근자 생략
 			continue;
 
-		sscanf(namelist[i]->d_name, "%[^((?!.txt)/)*$]", tmp);
-		if(!strcmp(file_name, tmp)) { // 휴지통에 중복없이 한개만 존재할 경우
-			sprintf(tmp, "%s/%s.txt", trash_info_path, file_name); // 정보 파일 경로 생성
-			if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드 열기
+		sscanf(namelist[i]->d_name, "%[^((?!.txt)/)*$]", tmp); // 파일 이름 추출
+
+		// 1. 휴지통에 해당 파일이 존재하는 경우
+		if(!strcmp(file_name, tmp)) { 
+
+			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로 생성
+			if((fp = fopen(tmp, "r+")) < 0) { // 정보 파일 읽기 모드로 열기
 				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
 				continue;
 			}
-			// 정보 탐색
-			fseek(fp, 13, SEEK_SET); // 헤더 생략
-			fscanf(fp, "%s\n", file_info[idx].path); // 원본 파일 경로 추출
-			fclose(fp);
+			fseek(fp, 13, SEEK_SET); // 정보 파일 제목 생략
 
-			if(access(file_info[idx].path, F_OK) < 0) { // 복원할 곳에 파일이 존재하지 않을 경우
+			// 파일 경로 추출
+			fscanf(fp, "%s\n", file_info[idx].path); 
 
-				unlink(tmp); // 정보 파일 삭제
-				sprintf(tmp, "%s/%s/%s", pwd, TRASH_FILES, file_name); // 복원 경로 생성
-				rename(tmp, file_info[idx].path); // 원본 파일 복원
+			fclose(fp); // 파일 닫기
 
-			} else { // 복원할 곳에 파일이 존재하는 경우
+			if(access(file_info[idx].path, F_OK) < 0) { // a. 복원 지점에 똑같은 이름의 파일이 존재하지 않을 경우
 
-				j = 1;
-				temp = get_file_path(file_info[idx].path, file_name); // 복원 경로 생성
+				// 정보 파일 삭제 
+				unlink(tmp); 
+
+				// 원본 파일 복원
+				sprintf(tmp, "%s/%s/%s", pwd, TRASH_FILES, file_name); // 휴지통 원본 파일 경로 생성
+				rename(tmp, file_info[idx].path); // 휴지통 원본 파일을 복원 지점으로 이동
+
+			} else { // b. 복원 지점에 똑같은 이름의 파일이 존재하는 경우
+
+				j = 1; // 중복 파일 카운트
+				
+				temp = get_file_path(file_info[idx].path, file_name); // 복원 지점 경로 추출, path/
 
 				while(true) { 
-					sprintf(tmp, "%s%d_%s", temp, j, file_name);
-					if(access(tmp, F_OK) < 0) {
-						sprintf(trash_info_path, "%s/%s/%s", pwd, TRASH_FILES, file_name);
-						rename(trash_info_path, tmp);
-						sprintf(trash_info_path, "%s/%s/%s.txt", pwd, TRASH_INFO, file_name);
-						unlink(trash_info_path);
-						free(namelist);
-						return;
-					}
-					j++;
-				}
+					sprintf(tmp, "%s%d_%s", temp, j, file_name); // 복원 파일 이름 생성
+					if(access(tmp, F_OK) < 0) { // 복원 지점에 해당 이름의 파일이 존재하지 않는 경우
 
+						// 정보 파일 삭제
+						sprintf(trash_info_path, "%s/%s/%s.txt", pwd, TRASH_INFO, file_name); // 휴지통 정보 파일 경로 생성
+						unlink(trash_info_path);
+
+						// 원본 파일 복원
+						sprintf(trash_files_path, "%s/%s/%s", pwd, TRASH_FILES, file_name); // 휴지통 원본 파일 경로 생성
+						rename(trash_files_path, tmp); // 휴지통 원본 파일을 복원지점으로 이동
+
+						break;
+					}
+					j++; // 중복 파일 카운트 증가
+				}
 			}
-			free(namelist);
-			return;
+			free(namelist); // 메모리 할당 해제
+			return; 
 		}
 
-		sscanf(namelist[i]->d_name, "%d_%[^((?!.txt)/)*$]", &overlap, tmp); // 정규 표현식, .txt 제외 파싱
+		sscanf(namelist[i]->d_name, "%d_%[^((?!.txt)/)*$]", &overlap, tmp); // 중복 파일 카운트, 파일 이름 추출 
 
-		if(!strcmp(file_name, tmp)) { // 다수 중복되는 경우
-			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name);
+		// 2. 휴지통에 해당 파일이 중복으로 존재하는 경우
+		if(!strcmp(file_name, tmp)) { 
 
-			if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드로 열기
+			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로 생성
+
+			if((fp = fopen(tmp, "r+")) < 0) { // 정보 파일 읽기 모드로 열기
 				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
 				continue;
 			}
-			fseek(fp, 13, SEEK_SET); // 헤더 생략
-			file_info[idx].num = overlap;
-			// 파일 이름 추출
+			fseek(fp, 13, SEEK_SET); // 정보 파일 제목 생략
+
+			file_info[idx].num = overlap; // 중복 파일 카운트 저장
+
+			// 파일 경로 추출
 			fscanf(fp, "%s\n", file_info[idx].path);
 
 			// 파일 시간 정보 추출
@@ -814,51 +834,61 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			file_info[idx].d_tm = get_tm(date, time);
 			fscanf(fp, "M : %s %s\n", date, time); // 수정 시간
 			file_info[idx].m_tm = get_tm(date, time);
-			fclose(fp);
-			idx++;
+
+			fclose(fp); // 파일 닫기
+
+			idx++; // 구조체 카운트 증가
 		}
 	}
-	free(namelist);
 
-	sort_info_order(file_info, idx);
+	free(namelist); // 메모리 할당 해제
 
-	// 중복된 파일이 존재하는 경우 
+	sort_info_order(file_info, idx); // 구조체 배열 중복 파일 카운트순 오름차순 정렬 
+
+	// 중복된 파일 중 선택하기 
 	for(i = 0; i < idx; i++)
 		printf("%d. %-10s D : %s M : %s\n", i + 1, file_name, make_time_format(file_info[i].d_tm), make_time_format(file_info[i].m_tm)); 
 	printf("Choose : ");
-	i = getchar();
+	i = getchar(); // 입력
 	getchar();
 	i -= 48;
 
-	if(access(file_info[i].path, F_OK) < 0) { // 복원할 곳에 파일이 존재하지 않을 경우
-		// 정보 파일 삭제 
-		sprintf(tmp, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, i, file_name);
-		unlink(tmp);
-		// 원본 파일 복구
-		sprintf(tmp, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
-		rename(tmp, file_info[i - 1].path);
-		free(namelist);
-	} else { // 복원할 곳에 파일이 존재하는 경우
+	if(access(file_info[i].path, F_OK) < 0) { // c. 복원 지점에 똑같은 이름의 파일이 존재하지 않는 경우
 
-		j = 1;
-		temp = get_file_path(file_info[i].path, file_name); // 복원 경로 생성
+		// 정보 파일 삭제 
+		sprintf(tmp, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, i, file_name); // 휴지통 정보 파일 경로 생성
+		unlink(tmp); 
+
+		// 원본 파일 복구
+		sprintf(tmp, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name); // 휴지통 원본 파일 경로 생성
+		rename(tmp, file_info[i - 1].path); // 휴지통 원본 파일을 복원 지점으로 이동
+
+	} else { // d. 복원 지점에 똑같은 이름의 파일이 존재하는 경우
+
+		j = 1; // 중복 파일 카운트 
+
+		temp = get_file_path(file_info[i - 1].path, file_name); // 복원 지점 경로 생성, path/
 
 		while(true) { 
-			sprintf(tmp, "%s%d_%s", temp, j, file_name);
-			if(access(tmp, F_OK) < 0) {
-				sprintf(trash_info_path, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
-				rename(trash_info_path, tmp);
+			sprintf(tmp, "%s%d_%s", temp, j, file_name); // 복원 파일 이름 생성
+			if(access(tmp, F_OK) < 0) { // 복원 지점에 해당 이름의 파일이 존재하지 않는 경우
+
+				// 정보 파일 삭제 
 				sprintf(trash_info_path, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, i, file_name);
 				unlink(trash_info_path);
-				free(namelist);
-				return;
+
+				// 원본 파일 복원
+				sprintf(trash_files_path, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
+				rename(trash_files_path, tmp);
+				
+				break;
 			}
-			j++;
+			j++; // 중복 파일 카운트 증가
 		}
 
 	}
-	// 중복 정보 파일 재정렬
-	sort_trash_info(file_name, idx - 1, i);
+
+	sort_trash_info(file_name, idx - 1, i); // 휴지통 정리
 }
 
 char *get_file_path(char *path, const char *file_name) // 파일 경로 추출
