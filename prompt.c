@@ -123,9 +123,7 @@ void prompt(void) // 프롬프트 메인 함수
 						current_t = time(NULL);
 						reserv_tm = get_tm(command.argv[idx], command.argv[idx + 1]);
 						reserv_t = mktime(&reserv_tm);
-						printf("%d %d\n", current_t, reserv_t);
 						if((sec = difftime(reserv_t, current_t)) < 0) {
-							printf("%d\n", sec);
 							fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
 							is_invalid = true;
 							break;
@@ -142,7 +140,7 @@ void prompt(void) // 프롬프트 메인 함수
 					fprintf(stderr, "%s: invalid input\n", command.argv[0]);
 					break;
 				} else if(option_r && !is_endtime) { // -r 옵션이 주어지고, END_TIME이 존재하지 않는 경우
-					fprintf(stderr, "%s: END_TIME doesn't exist\n", command.argv[0]);
+					fprintf(stderr, "%s -r: END_TIME doesn't exist\n", command.argv[0]);
 					break;
 				}
 
