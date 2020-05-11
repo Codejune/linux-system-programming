@@ -26,11 +26,11 @@ int find_trash_overlap(const char *file_name); // 휴지통 중복 파일 탐색
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch); // 지정 파일 상대 경로 및 크기 출력
 void restore_file(const char *file_name, int option_l); // 휴지통 파일 복원
 char *get_file_path(char *path, const char *file_name); // 파일 경로 추출
-void sort_trash_info(const char *file_name, int idx, int delete_idx); // 삭제 후 중복 파일 번호 재정렬 
+void refresh_trash(const char *file_name, int idx, int delete_idx); // 삭제 후 중복 파일 번호 재정렬 
 void sort_info_oldest(file_infos *file_info, int idx); // 삭제 시간 오름차순 정렬
 void sort_info_order(file_infos *file_info, int idx); // 중복 파일 오름차순 정렬
 void print_list_tree(file_node *head, int level, int level_check[], int is_root); // 모니터링 파일 목록 트리 출력
-void print_indent(int level, int level_check[]); // 트리 출력 보조 함수
+void print_tree_indent(int level, int level_check[]); // 트리 출력 보조 함수
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void to_lower_case(char *str); // 문자열 소문자 변환

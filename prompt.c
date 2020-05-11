@@ -288,7 +288,7 @@ void prompt(void) // 프롬프트 메인 함수
 
 			case TREE:
 
-				memset(level_check, 0, sizeof(level_check));
+				memset(level_check, 0, BUFFER_SIZE);
 				head = make_list(check_path); // 모니터링 디렉토리 파일 목록 구조체 생성
 				print_list_tree(head, 0, level_check, true); // 출력 
 				free_list(head); // 메모리 할당 해제
@@ -778,8 +778,9 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			printf("%d. %-10s %s\n", i + 1, get_file_name(file_info[i].path), make_time_format(file_info[i].d_tm)); 
 	} 
 
-	// 파일 복원
-
+	// 파일 복원 우선 순위
+	// 1. 휴지통 디렉토리에 존재하는 경우
+	// 2. 휴지통 디렉토리에 중복으로 존재하는 경우
 	idx = 0;
 
 	file_count = scandir(trash_info_path, &namelist, NULL, alphasort); // 파일 정보 디렉토리 탐색
@@ -788,7 +789,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) // 상위 디렉토리 접근자 생략
 			continue;
 
-		memset(tmp, 0, sizeof(tmp));
+		memset(tmp, 0, MAX_BUFFER_SIZE);
 		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4); // 정보 파일명에서 원본 파일명 추출
 
 		// 1. 휴지통에 해당 파일이 존재하는 경우
@@ -849,7 +850,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			return; 
 		}
 
-		memset(tmp, 0, sizeof(tmp));
+		memset(tmp, 0, MAX_BUFFER_SIZE);
 		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
 		sscanf(tmp, "%d_%s", &overlap, tmp); // 중복 파일 카운트, 파일 이름 추출 
 
@@ -880,12 +881,12 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			idx++; // 구조체 카운트 증가
 		}
 
-	}
+	} // 휴지통 탐색 완료
 
 	free(namelist); // 메모리 할당 해제
 	sort_info_order(file_info, idx); // 구조체 배열 중복 파일 카운트순 오름차순 정렬 
 
-	// 중복된 파일 중 선택하기 
+	// 중복된 파일 중 선택 복원
 	for(i = 0; i < idx; i++)
 		printf("%d. %-10s D : %s M : %s\n", i + 1, file_name, make_time_format(file_info[i].d_tm), make_time_format(file_info[i].m_tm)); 
 	printf("Choose : ");
@@ -937,8 +938,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		}
 
 	}
-
-	sort_trash_info(file_name, idx - 1, i); // 휴지통 정리
+	refresh_trash(file_name, idx - 1, i); // 휴지통 중복 파일 재정리
 }
 
 char *get_file_path(char *path, const char *file_name) // 파일 경로 추출
@@ -1003,7 +1003,7 @@ void sort_info_order(file_infos *file_info, int idx) // 파일정보 구조체 �
 }
 
 
-void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 후 중복 파일 번호 재정렬 
+void refresh_trash(const char *file_name, int idx, int delete_idx) // 삭제 후 중복 파일 번호 재정렬 
 {
 	char trash_info_path[MAX_BUFFER_SIZE];
 	char trash_files_path[MAX_BUFFER_SIZE];
@@ -1017,7 +1017,8 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
 	sprintf(trash_files_path, "%s/%s", pwd, TRASH_FILES);
 
-	if(idx == 1 && delete_idx == 1) { // 중복 파일이 더이상 존재하지 않는 경우
+	// 중복 파일이 더이상 존재하지 않는 경우 
+	if(idx == 1 && delete_idx == 1) { // 중복 파일 2개중 1번을 삭제한 경우
 		chdir(TRASH_INFO);
 		sprintf(tmp1, "2_%s.txt", file_name);
 		sprintf(tmp2, "%s.txt", file_name);
@@ -1028,7 +1029,7 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 		rename(tmp1, file_name);
 		chdir(pwd);
 		return;
-	} else if(idx == 1 && delete_idx == 2) {
+	} else if(idx == 1 && delete_idx == 2) { // 중복 파일 2개중 2번을 삭제한 경우
 		chdir(TRASH_INFO);
 		sprintf(tmp1, "1_%s.txt", file_name);
 		sprintf(tmp2, "%s.txt", file_name);
@@ -1039,13 +1040,14 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 		rename(tmp1, file_name);
 		chdir(pwd);
 		return;
-	} else {
+	} else { // 중복 파일 3개 이상
 		file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
 		for(i = 0; i < file_count; i++) {
 
 			if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
 				continue;
 
+			memset(tmp1, 0, BUFFER_SIZE);
 			strncpy(tmp1, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
 			sscanf(tmp1, "%d_%s", &overlap, tmp1); // 중복 파일 카운트, 파일 이름 추출 
 
@@ -1061,7 +1063,6 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 				rename(tmp1, tmp2);
 				chdir(pwd);
 			}
-			memset(tmp1, 0, sizeof(tmp1));
 		}
 		free(namelist);
 	}
@@ -1090,7 +1091,7 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 			continue;
 		}
 
-		print_indent(level, level_check);
+		print_tree_indent(level, level_check);
 
 		if(now->next != NULL) 
 			printf("├──%s\n", file_name);
@@ -1117,7 +1118,7 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 	}	
 }
 
-void print_indent(int level, int level_check[]) // 트리 출력 보조 함수
+void print_tree_indent(int level, int level_check[]) // 트리 출력 보조 함수
 {
 	int i;
 
