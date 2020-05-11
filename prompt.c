@@ -3,6 +3,7 @@
 char pwd[BUFFER_SIZE];
 int in_fd;
 int out_fd;
+int err_fd;
 
 void prompt(void) // 프롬프트 메인 함수
 {
@@ -54,9 +55,6 @@ void prompt(void) // 프롬프트 메인 함수
 
 	while (command_type != EXIT) {
 
-		if(pid != getpid())
-			break;
-
 		fputs(PROMPT, stdout);
 		fgets(command_line, MAX_BUFFER_SIZE, stdin); // 실행 명령 입력
 		strcpy(command_line, ltrim(rtrim(command_line))); // 실행 명령 좌우 공백 지우기
@@ -83,7 +81,8 @@ void prompt(void) // 프롬프트 메인 함수
 				chdir(CHECK);
 
 				if(command.argc < 2) { // 인자 개수가 부족할 경우
-					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
+					printf("pid : %d, parent : %d\n", getpid(), pid);
+					fprintf(stderr, "%s1: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
 
@@ -110,7 +109,7 @@ void prompt(void) // 프롬프트 메인 함수
 					// FILE_NAME 파싱
 					if(!is_filename) {
 						if(access(command.argv[idx], F_OK) < 0) { // 파일이 존재하지 않을 경우
-							fprintf(stderr, "%s: access error1 for %s\n", command.argv[0], command.argv[idx]);
+							fprintf(stderr, "%s: access error for %s\n", command.argv[0], command.argv[idx]);
 							is_invalid = true;
 							break;
 						} else { // 파일이 존재하는 경우
@@ -173,7 +172,7 @@ void prompt(void) // 프롬프트 메인 함수
 				option_d = false;
 
 				if(command.argc < 2) { // 인자 개수가 부족할 경우
-					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
+					fprintf(stderr, "%s2: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
 
@@ -241,7 +240,7 @@ void prompt(void) // 프롬프트 메인 함수
 				option_l = false;
 
 				if(command.argc < 2) { // 인자 개수가 부족할 경우
-					fprintf(stderr, "%s: FILE_NAME doesn't exist\n", command.argv[0]);
+					fprintf(stderr, "%s3: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
 
@@ -310,10 +309,12 @@ void prompt(void) // 프롬프트 메인 함수
 				break;
 
 			default:
-				continue;
+				break;
 		}
+		free_command(command);
+		fflush(stdin);
+		fflush(stdout);
 	}
-	fflush(stdout); // 표준 출력 스트림을 비움
 }
 
 commands make_command_token(char *command_line) // 명령어 전체 문장 토큰화
@@ -447,10 +448,9 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 
 	ppid = getpid();
 
-	if((pid = fork()) < 0) {
+	if((pid = fork()) < 0)
 		fprintf(stderr, "delete: fork error\n");
-		return;
-	} else if(pid == 0) {
+	else if(pid == 0) {
 
 		sleep(sec); // 시간 대기
 
@@ -463,8 +463,7 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 		if(option_r) { // -r옵션이 존재할 경우
 			kill(ppid, SIGUSR1);
 			printf("\nDelete [y/n]? ");
-			scanf("%c", &input);
-			getchar();
+			input = fgetc(stdin);
 			switch(input) {
 				case 'y':
 					move_trash(head, option_i);
@@ -475,11 +474,13 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 					fputs("delete: invalid input, thread was being aborted\n", stdout);
 					break;
 			}
-			kill(ppid, SIGUSR2);
 		} else 
 			move_trash(head, option_i);
 		free_list(head);
+		kill(ppid, SIGUSR2);
+		exit(0);
 	}
+	return;
 }
 
 void swap_stdin(int signal_type){ // 시그널로 표준입출력 전환
@@ -487,12 +488,15 @@ void swap_stdin(int signal_type){ // 시그널로 표준입출력 전환
 		case SIGUSR1:
 			in_fd = dup(0);
 			out_fd = dup(1);
+			err_fd = dup(2);
 			close(0);
 			close(1);
+			close(2);
 			break;
 		case SIGUSR2:
 			dup2(in_fd, 0);
 			dup2(out_fd, 1);
+			dup2(err_fd, 2);
 			break;
 	}
 }
