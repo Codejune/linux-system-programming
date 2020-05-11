@@ -22,7 +22,7 @@ struct tm get_tm(char *date, char *time); // 시간 구조체 획득
 void remove_directory(const char *path); // 디렉토리 삭제
 int check_trash_info(void); // 휴지통 파일 정보 디렉토리 크기 확인
 void delete_trash_oldest(void); // 휴지통에서 가장 오래 삭제된 파일 제거
-int find_trash_file(const char *file_name); // 휴지통 중복 파일 탐색
+int find_trash_overlap(const char *file_name); // 휴지통 중복 파일 탐색
 void print_list_size(file_node *head, char *path, int number, int option_d, int op_switch); // 지정 파일 상대 경로 및 크기 출력
 void restore_file(const char *file_name, int option_l); // 휴지통 파일 복원
 char *get_file_path(char *path, const char *file_name); // 파일 경로 추출

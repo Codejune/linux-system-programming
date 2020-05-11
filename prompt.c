@@ -237,6 +237,7 @@ void prompt(void) // 프롬프트 메인 함수
 
 				is_filename = false;
 				option_l = false;
+				is_invalid = false;
 
 				if(command.argc < 2) { // 인자 개수가 부족할 경우
 					fprintf(stderr, "%s3: FILE_NAME doesn't exist\n", command.argv[0]);
@@ -410,7 +411,7 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 			unlink(head->name);
 	} else {
 		// 파일 정보 생성
-		if((overlap = find_trash_file(file_name)) > 0) 
+		if((overlap = find_trash_overlap(file_name)) > 0) 
 			sprintf(target_path, "%s/%d_%s.txt", trash_info_path, overlap, file_name);
 		else 
 			sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
@@ -647,7 +648,7 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 	free(namelist);
 }
 
-int find_trash_file(const char *file_name) // 휴지통 중복 파일 탐색
+int find_trash_overlap(const char *file_name) // 휴지통 중복 파일 탐색
 {
 	char trash_info_path[BUFFER_SIZE];
 	char trash_files_path[BUFFER_SIZE];
@@ -793,7 +794,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) // 상위 디렉토리 접근자 생략
 			continue;
 
-		sscanf(namelist[i]->d_name, "%[^((?!.txt)/)*$]", tmp); // 파일 이름 추출
+		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
 
 		// 1. 휴지통에 해당 파일이 존재하는 경우
 		if(!strcmp(file_name, tmp)) { 
@@ -846,7 +847,10 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			return; 
 		}
 
-		sscanf(namelist[i]->d_name, "%d_%[^((?!.txt)/)*$]", &overlap, tmp); // 중복 파일 카운트, 파일 이름 추출 
+		memset(tmp, 0, sizeof(tmp));
+
+		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
+		sscanf(tmp, "%d_%s", &overlap, tmp); // 중복 파일 카운트, 파일 이름 추출 
 
 		// 2. 휴지통에 해당 파일이 중복으로 존재하는 경우
 		if(!strcmp(file_name, tmp)) { 
@@ -874,6 +878,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 
 			idx++; // 구조체 카운트 증가
 		}
+
 	}
 
 	free(namelist); // 메모리 할당 해제
@@ -884,9 +889,13 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	for(i = 0; i < idx; i++)
 		printf("%d. %-10s D : %s M : %s\n", i + 1, file_name, make_time_format(file_info[i].d_tm), make_time_format(file_info[i].m_tm)); 
 	printf("Choose : ");
-	i = getchar(); // 입력
+	scanf("%d", &i);
 	getchar();
-	i -= 48;
+
+	if(i < 0 || i > idx + 1) {
+		fprintf(stderr, "recover: invalid input NUMBER\n");
+		return;
+	}
 
 	if(access(file_info[i].path, F_OK) < 0) { // c. 복원 지점에 똑같은 이름의 파일이 존재하지 않는 경우
 
@@ -1029,7 +1038,8 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 			if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, ".."))
 				continue;
 
-			sscanf(namelist[i]->d_name, "%d_%[^((?!.txt)/)*$]", &overlap, tmp1);
+			strncpy(tmp1, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
+			sscanf(tmp1, "%d_%s", &overlap, tmp1); // 중복 파일 카운트, 파일 이름 추출 
 
 			if(overlap >= delete_idx && !strcmp(tmp1, file_name)) {
 				chdir(TRASH_INFO);
@@ -1043,6 +1053,7 @@ void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 �
 				rename(tmp1, tmp2);
 				chdir(pwd);
 			}
+			memset(tmp1, 0, sizeof(tmp1));
 		}
 		free(namelist);
 	}

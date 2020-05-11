@@ -287,7 +287,6 @@ void set_daemon_process(void) // 데몬 프로세스 설정
 
 	// #5 루트 디렉토리 이동
 	chdir("/");
-/*
 	// #6 모든 파일 디스크럽터 연결 종료
 	maxfd = getdtablesize(); // 모든 파일 디스크럽터 개수 획득
 	for(fd = 0; fd < maxfd; fd++) 
@@ -297,6 +296,6 @@ void set_daemon_process(void) // 데몬 프로세스 설정
 	fd = open("dev/null", O_RDWR); // STDIO 재설정
 	dup(0);
 	dup(0);
-*/
+
 	// 라이브러리 루틴 무효화
 }
