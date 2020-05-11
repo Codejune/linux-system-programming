@@ -671,7 +671,7 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 	} else if(i == 2) { // 중복 파일이 두개만 존재했었을 경우
 		sprintf(tmp, "%d_%s", i + 1, old_name); 
 		if(access(tmp, F_OK) < 0) { // 존재하지 않을 경우 
-			
+
 			// 정보 파일 정리
 			sprintf(tmp, "%d_%s", i - 1, old_name);
 			sprintf(path, "%s", old_name);
@@ -1094,7 +1094,6 @@ void refresh_trash(const char *file_name, int idx, int delete_idx) // 삭제 후
 		sprintf(tmp1, "2_%s", file_name);
 		rename(tmp1, file_name);
 		chdir(pwd);
-		return;
 	} else if(idx == 1 && delete_idx == 2) { // 중복 파일 2개중 2번을 삭제한 경우
 		chdir(TRASH_INFO);
 		sprintf(tmp1, "1_%s.txt", file_name);
@@ -1105,7 +1104,6 @@ void refresh_trash(const char *file_name, int idx, int delete_idx) // 삭제 후
 		sprintf(tmp1, "1_%s", file_name);
 		rename(tmp1, file_name);
 		chdir(pwd);
-		return;
 	} else { // 중복 파일 3개 이상
 		file_count = scandir(trash_info_path, &namelist, NULL, alphasort);
 		for(i = 0; i < file_count; i++) {

@@ -15,41 +15,41 @@
 
 // 불 타입
 #ifndef true
-	#define true  1
+    #define true  1
 #endif
 #ifndef false
-	#define false 0
+    #define false 0
 #endif
 
 // 표준 입출력 타입
 #ifndef STDOUT 
-	#define STDOUT 1
+    #define STDOUT 1
 #endif
 #ifndef STDERR
-	#define STDERR 2
+    #define STDERR 2
 #endif
 
 // 명령어 타입
 #ifndef DELETE
-	#define DELETE  1
+    #define DELETE  1
 #endif
 #ifndef SIZE
-	#define SIZE    2
+    #define SIZE    2
 #endif
 #ifndef RECOVER
-	#define RECOVER 3
+    #define RECOVER 3
 #endif
 #ifndef TREE
-	#define TREE    4
+    #define TREE    4
 #endif
 #ifndef EXIT
-	#define EXIT    5
+    #define EXIT    5
 #endif
 #ifndef HELP
-	#define HELP    6
+    #define HELP    6
 #endif
 #ifndef UNKNOWN
-	#define UNKNOWN 7
+    #define UNKNOWN 7
 #endif
 
 // 크기
@@ -60,11 +60,11 @@
 #define MAX_INFO_SIZE   2048
 
 // 디렉토리
-#define CHECK       "check"
-#define TRASH       "trash"
+#define CHECK             "check"
+#define TRASH             "trash"
 #define TRASH_FILES TRASH "/files"
 #define TRASH_INFO  TRASH "/info"
-#define LOG         "log.txt"
+#define LOG               "log.txt"
 
 // 모니터링 상태
 #define UNCHCK -1
@@ -73,10 +73,10 @@
 #define MODIFY  3
 
 // 형식
-#define YYMMDD_HHMMSS "%.4d-%.2d-%.2d %.2d:%.2d:%.2d"
-#define YYMMDD        "%.4d-%.2d-%.2d"
-#define HHSS          "%.2d:%.2d"
-#define PROMPT "20162448>"
+#define YYMMDD_HHMMSS   "%.4d-%.2d-%.2d %.2d:%.2d:%.2d"
+#define YYMMDD          "%.4d-%.2d-%.2d"
+#define HHSS            "%.2d:%.2d"
+#define PROMPT          "20162448>"
 #define SECOND_TO_MICRO 1000000
 
 // 권한
@@ -86,10 +86,10 @@ typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 	char name[BUFFER_SIZE]; // 파일 이름
 	struct stat attr; // 파일 상태 정보
 	struct dirent **namelist; // 디렉토리 경우 하위 파일 목록
-	struct ssu_fileNode *next; 
-	struct ssu_fileNode *child;
-	int size;
-	int status;
+	struct ssu_fileNode *next; // 하위 디렉토리 파일 포인터
+	struct ssu_fileNode *child; // 같은 레벨의 다음 파일 포인터
+	int size; // 파일 크기
+	int status; // 모니터링 확인 상태
 } file_node;
 
 void prompt(void); // 프롬프트

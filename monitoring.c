@@ -105,7 +105,7 @@ int count_file(file_node *head) // 파일 개수 반환
 
 		if(now->child != NULL) // 현재 탐색하는 파일이 디렉토리일 경우
 			cnt += count_file(now->child); // 해당 디렉토리 파일 개수 재귀 탐색
-		
+
 		now = now->next;  // 다음 파일 탐색
 	}
 
@@ -191,7 +191,7 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 		}
 
 		if(now->child != NULL)
-				idx = write_change_list(now->child, idx, status);
+			idx = write_change_list(now->child, idx, status);
 
 		now = now->next;
 	}
@@ -222,7 +222,7 @@ void write_change_log(int idx) // 변경사항 파일 기록
 	FILE *fp;
 	int i;
 	char *tmp;
-	
+
 	if((fp = fopen(log_path, "r+")) < 0) {
 		fprintf(stderr, "fopen error for %s\n", LOG);
 		exit(1);

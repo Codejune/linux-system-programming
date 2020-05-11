@@ -23,7 +23,7 @@ file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 	int file_count;
 	int is_dirattr = true;
 	int i;
-	
+
 	// 부모: 현재 경로, 디렉토리 상태정보, 파일 목록 정보
 	// 자식: 절대경로 파일이름, 파일 상태정보, 다음 파일 포인터 및 디렉토리 하위 부모노드 포인터 
 	head = make_node(); 
@@ -34,7 +34,7 @@ file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 
 	file_count = scandir(head->name, &(head->namelist), NULL, alphasort); // 현재 경로의 모든 파일 탐색 및 개수 저장
 	for(i = 0; i < file_count; i++) {
-	
+
 		if(!strcmp(head->namelist[i]->d_name, ".") || !strcmp(head->namelist[i]->d_name, "..")) // 현재, 상위 디렉토리 접근 지정자 생략
 			continue;
 
@@ -86,6 +86,7 @@ void free_list(file_node *head) // 모니터링 파일 목록 메모리 할당 �
 	if(head->next != NULL) // 형제 탐색
 		free_list(head->next);
 
+	free(head->namelist);
 	free(head); // 메모리 엑세스 허용
 }
 

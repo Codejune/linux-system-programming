@@ -1,9 +1,9 @@
 #include "common.h"
 
 typedef struct ssu_changeItem { // 변경사항 구조체
-	time_t time;
-	char name[BUFFER_SIZE];
-	int status;
+	time_t time; // 변경 시간
+	char name[BUFFER_SIZE]; // 파일 이름
+	int status; // 변경 상태 
 } change_file;
 
 void monitoring(void); // 모니터링

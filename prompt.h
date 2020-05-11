@@ -6,10 +6,10 @@ typedef struct ssu_commandToken { // 프롬프트 명령어 구조체
 } commands;
 
 typedef struct ssu_fileinfo {
-	int num;
-	char path[BUFFER_SIZE];
-	struct tm d_tm;
-	struct tm m_tm;
+	int num; 
+	char path[BUFFER_SIZE]; 
+	struct tm d_tm; // 삭제 시간 
+	struct tm m_tm; // 수정 시간
 } file_infos;
 
 commands make_command_token(char *command_line); // 명령어 전체 문장 토큰화
