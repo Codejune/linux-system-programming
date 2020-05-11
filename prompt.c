@@ -669,8 +669,8 @@ int find_trash_overlap(const char *file_name) // 휴지통 중복 파일 탐색
 			sprintf(target_path, "%s/%s/1_%s", pwd, TRASH_FILES, file_name);
 			sprintf(trash_files_path, "%s/%s/%s", pwd, TRASH_FILES, file_name);
 			rename(trash_files_path, target_path); // 원본 파일 이름 변경 
-			sprintf(target_path, "%s/%s/1_%s.txt", pwd, TRASH_FILES, file_name);
-			sprintf(trash_info_path, "%s/%s/%s.txt", pwd, TRASH_FILES, file_name);
+			sprintf(target_path, "%s/%s/1_%s.txt", pwd, TRASH_INFO, file_name);
+			sprintf(trash_info_path, "%s/%s/%s.txt", pwd, TRASH_INFO, file_name);
 			rename(trash_info_path, target_path); // 정보 파일 이름 변경
 			chdir(pwd);
 			free(namelist);
@@ -830,7 +830,6 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 
 				while(true) { 
 					sprintf(tmp, "%s%d_%s", temp, j, file_name); // 복원 파일 이름 생성
-					printf("%s\n", tmp);
 					if(access(tmp, F_OK) < 0) { // 복원 지점에 해당 이름의 파일이 존재하지 않는 경우
 
 						// 정보 파일 삭제
