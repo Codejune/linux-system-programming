@@ -5,9 +5,14 @@ char check_path[MAX_BUFFER_SIZE]; // $(PWD)/check 절대경로
 char log_path[MAX_BUFFER_SIZE];
 change_file change_list[MAX_BUFFER_SIZE]; // 변경 목록
 
-int main(void) // 모니터링 메인 함수
+void monitoring(void) // 모니터링
 {
 	FILE *fp; // log.txt 파일 구조체
+	int old_list_cnt, new_list_cnt; // 모니터링 디렉토리 파일 개수(기존, 신규)
+	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
+	int is_first;
+	int change_list_cnt;
+	time_t start_t;
 
 	// 프로세스 이름 변경
 	prctl(PR_SET_NAME, "ssu_mntr-daemon\0", NULL, NULL, NULL);
@@ -25,19 +30,7 @@ int main(void) // 모니터링 메인 함수
 	}
 	fclose(fp);
 
-	set_daemon_process();
-	monitoring();
-
-	exit(0);
-}
-
-void monitoring(void) // 모니터링
-{
-	int old_list_cnt, new_list_cnt; // 모니터링 디렉토리 파일 개수(기존, 신규)
-	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
-	int is_first;
-	int change_list_cnt;
-	time_t start_t;
+	set_daemon_process(); // 데몬프로세스화
 
 	start_t = time(NULL);
 	is_first = true;
@@ -71,6 +64,7 @@ void monitoring(void) // 모니터링
 
 		sleep(1);
 	}
+	exit(0);
 }
 
 

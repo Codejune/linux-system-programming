@@ -93,6 +93,7 @@ typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 } file_node;
 
 void prompt(void); // 프롬프트
+void monitoring(void); // 모니터링 
 file_node* make_list(char *path); // 디렉토리 파일 목록 트리화
 file_node *make_node(void); // 노드 생성
 int count_size(file_node *head); // 디렉토리 크기 반환

@@ -14,9 +14,9 @@ int main(void) // 프로세스 운영 메인 함수
 		exit(1);
 	}
 
-	// 자식 프로세스: 모니터링
+	// 자식 프로세스(데몬): 모니터링
 	if(daemon_pid == 0) 
-		execl("./monitoring", "", (char*)0);
+		monitoring();
 	// 부모 프로세스: 프롬프트
 	else 
 		prompt();
