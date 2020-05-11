@@ -1,7 +1,6 @@
 #include "prompt.h"
 
 char pwd[BUFFER_SIZE];
-pid_t pid;
 int in_fd;
 int out_fd;
 int err_fd;
@@ -44,7 +43,6 @@ void prompt(void) // 프롬프트 메인 함수
 	// TREE
 	int level_check[BUFFER_SIZE];
 
-	pid = getpid();
 	// 사용자 정의 시그널 
 	// SIGUSR1: 표준입출력 닫기
 	// SIGUSR2: 표준입출력 열기
@@ -81,7 +79,6 @@ void prompt(void) // 프롬프트 메인 함수
 				chdir(CHECK);
 
 				if(command.argc < 2) { // 인자 개수가 부족할 경우
-					printf("pid : %d, parent : %d\n", getpid(), pid);
 					fprintf(stderr, "%s1: FILE_NAME doesn't exist\n", command.argv[0]);
 					continue;
 				}
@@ -188,7 +185,7 @@ void prompt(void) // 프롬프트 메인 함수
 								fprintf(stderr, "%s: NUMBER doesn't exist\n", command.argv[0]);
 								is_invalid = true;
 								break;
-							} else if((number = atoi(command.argv[++idx])) == 0) { // NUMBER 
+							} else if((number = atoi(command.argv[++idx])) <= 0) { // NUMBER 
 								fprintf(stderr, "%s: invalid input NUMBER\n", command.argv[0]);
 								is_invalid = true;
 								break;
@@ -458,7 +455,7 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 
 		head = make_list(path); // 파일 목록 구조체 생성
 		if(option_r) { // -r옵션이 존재할 경우
-			kill(ppid, SIGUSR1);
+			kill(ppid, SIGUSR1); // 부모 프로세스의 표준 입출력 닫기
 			printf("\nDelete [y/n]? ");
 			input = fgetc(stdin);
 			switch(input) {
@@ -475,10 +472,10 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 		} else 
 			move_trash(head, option_i);
 		free_list(head);
-		kill(ppid, SIGUSR2);
-		exit(0);
+		kill(ppid, SIGUSR2); // 부모 프로세스의 표준 입출력 열기
+		exit(0); // 자식 프로세스 종료
 	}
-	return;
+	return; // 부모 프로세스 반환
 }
 
 void swap_handler(int signo){ // 시그널로 표준입출력 전환
@@ -567,7 +564,7 @@ int check_trash_info(void) // 휴지통 파일 정보 디렉토리 크기 확인
 	size = head->size;
 	free_list(head);
 
-	if(head->size > MAX_INFO_SIZE)
+	if(size > MAX_INFO_SIZE)
 		return true;
 	return false;
 }
@@ -705,6 +702,9 @@ void print_list_size(file_node *head, char *path, int number, int option_d, int 
 
 	while(number > 0) {
 
+		if(now == NULL) // 파일이 존재하지 않을 경우
+			break;
+
 		relative_path = now->name + strlen(pwd); // 상대 경로 추출
 		printf("%-10d.%-s\n", now->size, relative_path); // 출력
 
@@ -720,9 +720,7 @@ void print_list_size(file_node *head, char *path, int number, int option_d, int 
 		if(now->child != NULL) // 하위 디렉토리 파일들이 존재하면 
 			print_list_size(now->child, path, number - 1, option_d, op_switch); // 하위 디렉토리 파일 출력 
 
-		if(now->next != NULL) // 같은 레벨에 파일들이 더 존재할 경우
-			now = now->next;
-		else break; // 탐색 종료
+		now = now->next; // 같은 레벨의 파일들 이어서 탐색
 	}
 }
 
@@ -852,7 +850,6 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		}
 
 		memset(tmp, 0, sizeof(tmp));
-
 		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
 		sscanf(tmp, "%d_%s", &overlap, tmp); // 중복 파일 카운트, 파일 이름 추출 
 
@@ -886,7 +883,6 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	}
 
 	free(namelist); // 메모리 할당 해제
-
 	sort_info_order(file_info, idx); // 구조체 배열 중복 파일 카운트순 오름차순 정렬 
 
 	// 중복된 파일 중 선택하기 
@@ -896,7 +892,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	scanf("%d", &i);
 	getchar();
 
-	if(i < 0 || i > idx + 1) {
+	if(i < 1 || i >= idx) {
 		fprintf(stderr, "recover: invalid input NUMBER\n");
 		return;
 	}
