@@ -17,7 +17,7 @@ int get_command_type(char *command); // COMMAND 타입 확인 및 반환
 char *get_file_name(char *path); // 파일명 추출
 void move_trash(file_node *head, int option_i); // 파일 휴지통 이동
 void wait_thread(char *path, int sec, int option_r, int option_i); // 삭제 대기 스레드
-void swap_stdin(int signal_type); // 시그널로 표준입출력 전환
+void swap_handler(int signo); // 시그널로 표준입출력 전환
 struct tm get_tm(char *date, char *time); // 시간 구조체 획득
 void remove_directory(const char *path); // 디렉토리 삭제
 int check_trash_info(void); // 휴지통 파일 정보 디렉토리 크기 확인

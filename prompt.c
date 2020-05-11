@@ -1,6 +1,7 @@
 #include "prompt.h"
 
 char pwd[BUFFER_SIZE];
+pid_t pid;
 int in_fd;
 int out_fd;
 int err_fd;
@@ -23,7 +24,6 @@ void prompt(void) // 프롬프트 메인 함수
 	int idx;
 
 	// DELETE
-	pid_t pid;
 	struct tm reserv_tm;
 	time_t current_t;
 	time_t reserv_t;
@@ -48,8 +48,8 @@ void prompt(void) // 프롬프트 메인 함수
 	// 사용자 정의 시그널 
 	// SIGUSR1: 표준입출력 닫기
 	// SIGUSR2: 표준입출력 열기
-	signal(SIGUSR1, swap_stdin);
-	signal(SIGUSR2, swap_stdin);
+	signal(SIGUSR1, swap_handler);
+	signal(SIGUSR2, swap_handler);
 	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK); // 모니터링 디렉토리 경로 
 
@@ -130,7 +130,6 @@ void prompt(void) // 프롬프트 메인 함수
 						reserv_tm = get_tm(command.argv[idx], command.argv[idx + 1]);
 						reserv_t = mktime(&reserv_tm);
 						if((sec = (reserv_t -  current_t)) < 0) {
-							printf("%d\n%d\n%d\n", sec, reserv_t, current_t);
 							fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
 							is_invalid = true;
 							break;
@@ -467,6 +466,7 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 			switch(input) {
 				case 'y':
 					move_trash(head, option_i);
+					printf("please input ENTER to continue.\n");
 					break;
 				case 'n':
 					break;
@@ -483,8 +483,8 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 	return;
 }
 
-void swap_stdin(int signal_type){ // 시그널로 표준입출력 전환
-	switch(signal_type) {
+void swap_handler(int signo){ // 시그널로 표준입출력 전환
+	switch(signo) {
 		case SIGUSR1:
 			in_fd = dup(0);
 			out_fd = dup(1);
@@ -492,11 +492,14 @@ void swap_stdin(int signal_type){ // 시그널로 표준입출력 전환
 			close(0);
 			close(1);
 			close(2);
+			pause();
 			break;
 		case SIGUSR2:
 			dup2(in_fd, 0);
 			dup2(out_fd, 1);
 			dup2(err_fd, 2);
+			//raise(SIGCONT);
+			//kill(pid, SIGCONT);
 			break;
 	}
 }
