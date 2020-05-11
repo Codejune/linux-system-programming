@@ -791,7 +791,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			continue;
 
 		memset(tmp, 0, sizeof(tmp));
-		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
+		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4); // 정보 파일명에서 원본 파일명 추출
 
 		// 1. 휴지통에 해당 파일이 존재하는 경우
 		if(!strcmp(file_name, tmp)) { 
@@ -807,6 +807,12 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			fscanf(fp, "%s\n", file_info[idx].path); 
 
 			fclose(fp); // 파일 닫기
+
+			temp = get_file_path(file_info[idx].path, file_name);
+			if(access(temp, F_OK) < 0) { // 복원 지점까지의 경로가 존재하지 않을 경우
+				fprintf(stderr, "recover: %s path doesn't exist\n", temp);
+				return;
+			}
 
 			if(access(file_info[idx].path, F_OK) < 0) { // a. 복원 지점에 똑같은 이름의 파일이 존재하지 않을 경우
 
@@ -895,6 +901,12 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		return;
 	}
 
+	temp = get_file_path(file_info[i].path, file_name);
+	if(access(temp, F_OK) < 0) { // 복원 지점까지의 경로가 존재하지 않을 경우
+		fprintf(stderr, "recover: %s path doesn't exist\n", temp);
+		return;
+	}
+
 	if(access(file_info[i].path, F_OK) < 0) { // c. 복원 지점에 똑같은 이름의 파일이 존재하지 않는 경우
 
 		// 정보 파일 삭제 
@@ -939,12 +951,14 @@ char *get_file_path(char *path, const char *file_name) // 파일 경로 추출
 	static char file_path[BUFFER_SIZE];
 	char *tmp;
 
-	ptr = strstr(path, file_name);
+	strcpy(file_path, path);
+	ptr = strstr(file_path, file_name);
 	while(ptr != NULL) {
 		tmp = ptr;
 		ptr = strstr(ptr+1, file_name);
 	}
-	strncpy(file_path, path, tmp - path);
+	memset(file_path, 0, BUFFER_SIZE);
+	strncpy(file_path, path, tmp - file_path);
 
 	return (char*)file_path;
 }
