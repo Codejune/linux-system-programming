@@ -21,8 +21,8 @@ int main(void) // 프로세스 운영 메인 함수
 	else 
 		prompt();
 
-	// 모니터링 프로세스 종료(미구현)
-	kill(daemon_pid + 1, SIGKILL); // SIGKILL(LINUX), KILL(MAC) == 9
+	// 모니터링 프로세스 종료 (삭제됨)
+	//kill(daemon_pid + 1, SIGKILL); // SIGKILL(LINUX), KILL(MAC) == 9
 
 	gettimeofday(&end_t, NULL); // 측정 종료
 	ssu_runtime(&begin_t, &end_t); // 런타임 출력 
