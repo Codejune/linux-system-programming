@@ -1,4 +1,0 @@
-[Trash info]
-/home/donggyu/C_SSU_Monitoring/check/5.c
-D : 2020-05-11 19:10:02
-M : 2020-05-11 18:49:57

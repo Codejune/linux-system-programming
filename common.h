@@ -11,6 +11,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/prctl.h>
+#include <sys/time.h>
 
 // 불 타입
 #ifndef true
@@ -76,6 +77,7 @@
 #define YYMMDD        "%.4d-%.2d-%.2d"
 #define HHSS          "%.2d:%.2d"
 #define PROMPT "20162448>"
+#define SECOND_TO_MICRO 1000000
 
 // 권한
 #define DIR_MODE 0755
@@ -96,3 +98,4 @@ file_node *make_node(void); // 노드 생성
 int count_size(file_node *head); // 디렉토리 크기 반환
 void free_list(file_node *head); // 파일 목록 구조체 메모리 할당 해제 
 char *make_time_format(struct tm time); // 시간 형식 문자열 생성 
+void ssu_runtime(struct timeval *begin_t, struct timeval *end_t); // 실행시간 출력

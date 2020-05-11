@@ -9,7 +9,7 @@ int err_fd;
 void prompt(void) // 프롬프트 메인 함수
 {
 	// 프롬프트
-	char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
+	char check_path[MAX_BUFFER_SIZE]; // $(PWD)/check 절대경로
 	char command_line[MAX_BUFFER_SIZE]; // 입력받은 실행 명령 버퍼
 
 	// 명령어
@@ -38,7 +38,7 @@ void prompt(void) // 프롬프트 메인 함수
 
 	// RECOVER
 	int option_l;
-	char trash_files_path[BUFFER_SIZE];
+	char trash_files_path[MAX_BUFFER_SIZE];
 	char file_name[BUFFER_SIZE];
 
 	// TREE
@@ -297,17 +297,13 @@ void prompt(void) // 프롬프트 메인 함수
 				free_list(head); // 메모리 할당 해제
 				break;
 
-			case EXIT:
-				break;
-
 			case HELP:
 			case UNKNOWN:
-				if(!strcmp(command.argv[0], "ps"))
-					system("ps -efj");
 
 				print_usage();
 				break;
 
+			case EXIT:
 			default:
 				break;
 		}
@@ -315,6 +311,7 @@ void prompt(void) // 프롬프트 메인 함수
 		fflush(stdin);
 		fflush(stdout);
 	}
+	printf("Successful prompt termination.\n");
 }
 
 commands make_command_token(char *command_line) // 명령어 전체 문장 토큰화
@@ -381,9 +378,9 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 {
 	FILE *fp;
 	char *file_name;
-	char target_path[BUFFER_SIZE];
-	char trash_files_path[BUFFER_SIZE];
-	char trash_info_path[BUFFER_SIZE];
+	char target_path[MAX_BUFFER_SIZE];
+	char trash_files_path[MAX_BUFFER_SIZE];
+	char trash_info_path[MAX_BUFFER_SIZE];
 	char *time_format;
 	struct tm time_info;
 	time_t cur_time;
@@ -412,9 +409,9 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 	} else {
 		// 파일 정보 생성
 		if((overlap = find_trash_overlap(file_name)) > 0) 
-			sprintf(target_path, "%s/%d_%s.txt", trash_info_path, overlap, file_name);
+			sprintf(target_path, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, overlap, file_name);
 		else 
-			sprintf(target_path, "%s/%s.txt", trash_info_path, file_name);
+			sprintf(target_path, "%s/%s/%s.txt", pwd, TRASH_INFO, file_name);
 
 		if((fp = fopen(target_path, "w+")) < 0) {
 			fprintf(stderr, "fopen error for %s\n", target_path);
@@ -433,9 +430,9 @@ void move_trash(file_node *head, int option_i) // 파일을 휴지통 이동
 
 		// 파일 원본 이동
 		if(overlap > 0)
-			sprintf(target_path, "%s/%d_%s", trash_files_path, overlap, file_name);
+			sprintf(target_path, "%s/%s/%d_%s", pwd, TRASH_FILES, overlap, file_name);
 		else 
-			sprintf(target_path, "%s/%s", trash_files_path, file_name); // 이동할 경로 생성
+			sprintf(target_path, "%s/%s/%s", pwd, TRASH_FILES, file_name); // 이동할 경로 생성
 		rename(head->name, target_path); // 이동
 	}
 }
@@ -561,7 +558,7 @@ void remove_directory(const char *path) // 디렉토리 삭제
 
 int check_trash_info(void) // 휴지통 파일 정보 디렉토리 크기 확인
 {	
-	char trash_info_path[BUFFER_SIZE];
+	char trash_info_path[MAX_BUFFER_SIZE];
 	file_node *head;
 	int size;
 
@@ -577,7 +574,7 @@ int check_trash_info(void) // 휴지통 파일 정보 디렉토리 크기 확인
 
 void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일 제거
 { 
-	char trash_info_path[BUFFER_SIZE];
+	char trash_info_path[MAX_BUFFER_SIZE];
 	char old_info[BUFFER_SIZE];
 	char old_path[BUFFER_SIZE]; // 가장 오래된 파일 경로
 	char date[BUFFER_SIZE];
@@ -604,7 +601,7 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) 
 			continue;
 
-		sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로
+		sprintf(tmp, "%s/%s/%s", pwd, TRASH_INFO, namelist[i]->d_name); // 정보 파일 경로
 
 		// 정보 파일에서 데이터 추출
 		if((fp = fopen(tmp, "r+")) < 0) { // 파일 읽기 모드로 열기
@@ -650,8 +647,8 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 
 int find_trash_overlap(const char *file_name) // 휴지통 중복 파일 탐색
 {
-	char trash_info_path[BUFFER_SIZE];
-	char trash_files_path[BUFFER_SIZE];
+	char trash_info_path[MAX_BUFFER_SIZE];
+	char trash_files_path[MAX_BUFFER_SIZE];
 	char target_path[MAX_BUFFER_SIZE];
 	struct dirent **namelist;
 	int overlap_count;
@@ -672,11 +669,11 @@ int find_trash_overlap(const char *file_name) // 휴지통 중복 파일 탐색
 			continue;
 
 		if(!strcmp(file_name, namelist[i]->d_name)) { // 최초 중복되는 경우
-			sprintf(target_path, "%s/1_%s", trash_files_path, file_name);
-			sprintf(trash_files_path, "%s/%s", trash_files_path, file_name);
+			sprintf(target_path, "%s/%s/1_%s", pwd, TRASH_FILES, file_name);
+			sprintf(trash_files_path, "%s/%s/%s", pwd, TRASH_FILES, file_name);
 			rename(trash_files_path, target_path); // 원본 파일 이름 변경 
-			sprintf(target_path, "%s/1_%s.txt", trash_info_path, file_name);
-			sprintf(trash_info_path, "%s/%s.txt", trash_info_path, file_name);
+			sprintf(target_path, "%s/%s/1_%s.txt", pwd, TRASH_FILES, file_name);
+			sprintf(trash_info_path, "%s/%s/%s.txt", pwd, TRASH_FILES, file_name);
 			rename(trash_info_path, target_path); // 정보 파일 이름 변경
 			chdir(pwd);
 			free(namelist);
@@ -731,8 +728,8 @@ void print_list_size(file_node *head, char *path, int number, int option_d, int 
 
 void restore_file(const char *file_name, int option_l) // 휴지통 파일 복원
 {
-	char trash_info_path[BUFFER_SIZE];
-	char trash_files_path[BUFFER_SIZE];
+	char trash_info_path[MAX_BUFFER_SIZE];
+	char trash_files_path[MAX_BUFFER_SIZE];
 	char tmp[MAX_BUFFER_SIZE];
 	char date[BUFFER_SIZE];
 	char time[BUFFER_SIZE];
@@ -743,7 +740,6 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	file_infos file_info[50];
 	int idx;
 	int overlap;
-	int is_exist;
 	int i, j;
 
 	sprintf(trash_info_path, "%s/%s", pwd, TRASH_INFO);
@@ -759,7 +755,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 			if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) // 상위 디렉토리 접근자 생략
 				continue;
 
-			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로 생성
+			sprintf(tmp, "%s/%s/%s", pwd, TRASH_INFO, namelist[i]->d_name); // 정보 파일 경로 생성
 
 			if((fp = fopen(tmp, "r+")) < 0) { // 정보 파일 읽기 모드로 열기
 				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
@@ -794,12 +790,13 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		if(!strcmp(namelist[i]->d_name, ".") || !strcmp(namelist[i]->d_name, "..")) // 상위 디렉토리 접근자 생략
 			continue;
 
+		memset(tmp, 0, sizeof(tmp));
 		strncpy(tmp, namelist[i]->d_name, strlen(namelist[i]->d_name) - 4);
 
 		// 1. 휴지통에 해당 파일이 존재하는 경우
 		if(!strcmp(file_name, tmp)) { 
 
-			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로 생성
+			sprintf(tmp, "%s/%s/%s", pwd, TRASH_INFO, namelist[i]->d_name); // 정보 파일 경로 생성
 			if((fp = fopen(tmp, "r+")) < 0) { // 정보 파일 읽기 모드로 열기
 				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
 				continue;
@@ -828,6 +825,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 
 				while(true) { 
 					sprintf(tmp, "%s%d_%s", temp, j, file_name); // 복원 파일 이름 생성
+					printf("%s\n", tmp);
 					if(access(tmp, F_OK) < 0) { // 복원 지점에 해당 이름의 파일이 존재하지 않는 경우
 
 						// 정보 파일 삭제
@@ -855,7 +853,7 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 		// 2. 휴지통에 해당 파일이 중복으로 존재하는 경우
 		if(!strcmp(file_name, tmp)) { 
 
-			sprintf(tmp, "%s/%s", trash_info_path, namelist[i]->d_name); // 정보 파일 경로 생성
+			sprintf(tmp, "%s/%s/%s", pwd, TRASH_INFO, namelist[i]->d_name); // 정보 파일 경로 생성
 
 			if((fp = fopen(tmp, "r+")) < 0) { // 정보 파일 읽기 모드로 열기
 				fprintf(stderr, "fopen error for %s\n", namelist[i]->d_name);
@@ -997,8 +995,8 @@ void sort_info_order(file_infos *file_info, int idx) // 파일정보 구조체 �
 
 void sort_trash_info(const char *file_name, int idx, int delete_idx) // 삭제 후 중복 파일 번호 재정렬 
 {
-	char trash_info_path[BUFFER_SIZE];
-	char trash_files_path[BUFFER_SIZE];
+	char trash_info_path[MAX_BUFFER_SIZE];
+	char trash_files_path[MAX_BUFFER_SIZE];
 	char tmp1[BUFFER_SIZE];
 	char tmp2[BUFFER_SIZE];
 	struct dirent **namelist;

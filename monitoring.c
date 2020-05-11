@@ -1,8 +1,8 @@
 #include "monitoring.h"
 
 char pwd[BUFFER_SIZE];
-char check_path[BUFFER_SIZE]; // $(PWD)/check 절대경로
-char log_path[BUFFER_SIZE];
+char check_path[MAX_BUFFER_SIZE]; // $(PWD)/check 절대경로
+char log_path[MAX_BUFFER_SIZE];
 change_file change_list[MAX_BUFFER_SIZE]; // 변경 목록
 
 int main(void) // 모니터링 메인 함수
