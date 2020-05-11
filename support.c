@@ -20,7 +20,6 @@ file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 	// 파일    : 노드 생성(절대경로/이름, 상태정보)
 	// 디렉토리: 트리 생성
 	DIR *dp;
-
 	int file_count;
 	int is_dirattr = true;
 	int i;
@@ -28,7 +27,6 @@ file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 	// 부모: 현재 경로, 디렉토리 상태정보, 파일 목록 정보
 	// 자식: 절대경로 파일이름, 파일 상태정보, 다음 파일 포인터 및 디렉토리 하위 부모노드 포인터 
 	head = make_node(); 
-
 	now = head;
 
 	strcpy(head->name, path); // 현재 경로 저장
@@ -68,13 +66,14 @@ int count_size(file_node *head) // 디렉토리 크기 반환
 	file_node *now;
 	int size;
 
-	size = 0;
+	size = false;
 	now = head;
 
 	while(now != NULL) {
 		size += now->size;
 		now = now->next;
 	}
+
 	return size;
 }
 

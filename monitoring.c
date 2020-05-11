@@ -74,20 +74,17 @@ void init_list_status(file_node *head, int status) // 모니터링 파일 상태
 
 	now = head;
 
-	if(now == NULL)
-		return;
-
 	while(true) {
+
+		if(now == NULL)
+			break;
+
 		now->status = status;
 
-		if(S_ISDIR(now->attr.st_mode))  // 디렉토리의 경우
-			if(now->child != NULL)  
-				init_list_status(now->child, status); // 디렉토리 하위 파일 모니터링 상태 초기화
+		if(now->child != NULL)  
+			init_list_status(now->child, status); // 디렉토리 하위 파일 모니터링 상태 초기화
 
-		if(now->next != NULL)
-			now = now->next;
-		else 
-			break;
+		now = now->next;
 	}
 }
 
@@ -97,7 +94,7 @@ int count_file(file_node *head) // 파일 개수 반환
 	file_node *now;
 
 	now = head;
-	cnt = 0;
+	cnt = false;
 
 	while(true) { // 개수 탐색 시작
 
@@ -119,21 +116,22 @@ void compare_list(file_node *new_list, file_node *old_list) // 파일 목록 트
 {
 	file_node *now;
 
-	now = old_list;
-
 	if(new_list == NULL || old_list == NULL) // 둘중 하나라도 비교 대상이 존재하지 않을 경우
 		return;
 
+	now = old_list;
+
 	while(true) {	
+
+		if(now == NULL)
+			break;
+
 		compare_file(new_list, now);
 
 		if(now->child != NULL)
 			compare_list(new_list, now->child);
 
-		if(now->next != NULL)
-			now = now->next;
-
-		else break;
+		now = now->next;
 	}
 }
 
@@ -144,6 +142,9 @@ int compare_file(file_node *new_file, file_node *old_file) // 파일 정보 비�
 	now = new_file;
 
 	while(true) {
+
+		if(now == NULL)
+			break;
 
 		if(!strcmp(now->name, old_file->name)) { // 해당 이름을 가진 파일이 기존에 이미 존재할 경우
 			now->status = CHCKED;
@@ -159,11 +160,9 @@ int compare_file(file_node *new_file, file_node *old_file) // 파일 정보 비�
 			if(compare_file(now->child, old_file)) 
 				break;
 
-		if(now->next != NULL)
-			now = now->next;
-		else
-			break;
+		now = now->next;
 	}
+
 	return false;
 }
 
