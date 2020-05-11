@@ -573,7 +573,8 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 { 
 	char trash_info_path[MAX_BUFFER_SIZE];
 	char old_info[BUFFER_SIZE];
-	char old_path[BUFFER_SIZE]; // 가장 오래된 파일 경로
+	char old_path[MAX_BUFFER_SIZE]; // 가장 오래된 파일 경로
+	char old_name[BUFFER_SIZE];
 	char date[BUFFER_SIZE];
 	char time[BUFFER_SIZE];
 	char path[MAX_BUFFER_SIZE];
@@ -619,17 +620,20 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 
 		if(is_first) { // 최초 탐색일 경우
 			old_sec = now_sec; 
-			strcpy(old_path, path);
 			strcpy(old_info, tmp); 
+			strcpy(old_name, namelist[i]->d_name);
 			is_first = false;
 		} else {
 			if(now_sec < old_sec) {
 				old_sec = now_sec;
-				strcpy(old_path, path);
 				strcpy(old_info, tmp);
+				strcpy(old_name, namelist[i]->d_name);
 			}
 		}
 	}
+
+	sprintf(old_path, "%s/%s/", pwd, TRASH_FILES);
+	strncat(old_path, old_name, strlen(old_name) - 4);
 
 	stat(old_path, &statbuf); // 가장 오래된 파일 정보 획득
 
