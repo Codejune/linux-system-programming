@@ -130,7 +130,8 @@ void prompt(void) // 프롬프트 메인 함수
 						current_t = time(NULL);
 						reserv_tm = get_tm(command.argv[idx], command.argv[idx + 1]);
 						reserv_t = mktime(&reserv_tm);
-						if((sec = difftime(reserv_t, current_t)) < 0) {
+						if((sec = (reserv_t -  current_t)) < 0) {
+							printf("%d\n%d\n%d\n", sec, reserv_t, current_t);
 							fprintf(stderr, "%s: invalid END_TIME\n", command.argv[0]);
 							is_invalid = true;
 							break;
@@ -461,8 +462,8 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 		head = make_list(path); // 파일 목록 구조체 생성
 		if(option_r) { // -r옵션이 존재할 경우
 			kill(ppid, SIGUSR1);
-			fputs("\nDelete [y/n]? ", stdout);
-			input = getchar();
+			printf("\nDelete [y/n]? ");
+			scanf("%c", &input);
 			getchar();
 			switch(input) {
 				case 'y':
@@ -498,9 +499,11 @@ void swap_stdin(int signal_type){ // 시그널로 표준입출력 전환
 
 struct tm get_tm(char *date, char *time) // 시간 구조체 획득
 {
-	struct tm tmp;
+	static struct tm tmp;
 	int year, month, day;
 	int hour, min, sec;
+
+	year = month = day = hour = min = sec = 0;
 
 	sscanf(date, "%d-%d-%d", &year, &month, &day);
 	sscanf(time, "%d:%d:%d", &hour, &min, &sec);
