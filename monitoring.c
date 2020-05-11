@@ -37,10 +37,15 @@ void monitoring(void) // 모니터링
 	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
 	int is_first;
 	int change_list_cnt;
+	time_t start_t;
 
+	start_t = time(NULL);
 	is_first = true;
 
 	while(true) {
+
+		change_list_cnt = 0;
+
 		new_list = make_list(check_path); // 현재 파일 목록 및 상태 저장
 		new_list_cnt = count_file(new_list->child); // 현재 목록에 존재하는 파일 개수
 		init_list_status(new_list->child, UNCHCK); // 현재 파일 목록 모니터링 상태 초기화
@@ -51,14 +56,14 @@ void monitoring(void) // 모니터링
 			is_first = false;
 			continue;
 		}
-		
+
 		compare_list(new_list->child, old_list->child); // 파일 목록 트리 비교
-		change_list_cnt = write_change_list(new_list->child, 0, CREATE); // 생성된 파일 확인
+		change_list_cnt = write_change_list(new_list->child, change_list_cnt, CREATE); // 생성된 파일 확인
 		change_list_cnt = write_change_list(old_list->child, change_list_cnt, DELETE); // 삭제된 파일 확인
 		sort_change_list(change_list_cnt);
 		write_change_log(change_list_cnt);
 
-		free(old_list);
+		free_list(old_list);
 
 		old_list = new_list;
 		old_list_cnt = new_list_cnt;
@@ -172,6 +177,8 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 {
 	file_node *now;
 
+	now = head;
+
 	while(true) {
 
 		if(now == NULL)
@@ -179,10 +186,7 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 
 		switch(now->status) {
 			case UNCHCK:
-				if(status == CREATE)
-					change_list[idx].time = now->attr.st_mtime;
-				else if(status == DELETE)
-					change_list[idx].time = time(NULL);
+				change_list[idx].time = time(NULL);
 				strcpy(change_list[idx].name, now->name);
 				change_list[idx++].status = status;
 				break;
@@ -196,10 +200,7 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 		if(now->child != NULL)
 				idx = write_change_list(now->child, idx, status);
 
-		if(now->next != NULL)
-			now = now->next;
-		else 
-			break;
+		now = now->next;
 	}
 
 	return idx;

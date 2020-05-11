@@ -466,7 +466,7 @@ void wait_thread(char *path, int sec, int option_r, int option_i) // 삭제 대�
 			switch(input) {
 				case 'y':
 					move_trash(head, option_i);
-					printf("please input ENTER to continue.\n");
+					printf("please input ENTER to continue...");
 					break;
 				case 'n':
 					break;
@@ -498,8 +498,6 @@ void swap_handler(int signo){ // 시그널로 표준입출력 전환
 			dup2(in_fd, 0);
 			dup2(out_fd, 1);
 			dup2(err_fd, 2);
-			//raise(SIGCONT);
-			//kill(pid, SIGCONT);
 			break;
 	}
 }
