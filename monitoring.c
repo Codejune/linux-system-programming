@@ -69,27 +69,6 @@ void init_list_status(file_node *head, int status) // 모니터링 파일 상태
 	}
 }
 
-int count_file(file_node *head) // 파일 개수 반환 
-{
-	int cnt;
-	file_node *now;
-
-	now = head;
-	cnt = false;
-
-	while(now != NULL) { // 개수 탐색 시작
-
-		cnt++;
-
-		if(now->child != NULL) // 현재 탐색하는 파일이 디렉토리일 경우
-			cnt += count_file(now->child); // 해당 디렉토리 파일 개수 재귀 탐색
-
-		now = now->next;  // 다음 파일 탐색
-	}
-
-	return cnt;
-}
-
 void compare_list(file_node *new_list, file_node *old_list) // 파일 목록 트리 비교
 {
 	file_node *now;
