@@ -19,7 +19,6 @@ file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 	file_node *head, *now;
 	// 파일    : 노드 생성(절대경로/이름, 상태정보)
 	// 디렉토리: 트리 생성
-	DIR *dp;
 	int file_count;
 	int is_dirattr = true;
 	int i;

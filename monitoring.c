@@ -10,9 +10,7 @@ void monitoring(void) // 모니터링
 	FILE *fp; // log.txt 파일 구조체
 	int old_list_cnt, new_list_cnt; // 모니터링 디렉토리 파일 개수(기존, 신규)
 	file_node *old_list, *new_list; // 모니터링 디렉토리 트리(기존, 신규)
-	int is_first;
 	int change_list_cnt;
-	time_t start_t;
 
 	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK);
@@ -32,23 +30,15 @@ void monitoring(void) // 모니터링
 	// 프로세스 이름 변경
 	prctl(PR_SET_NAME, "ssu_mntr-daemon\0", NULL, NULL, NULL);
 
-	start_t = time(NULL);
-	is_first = true;
+	old_list = make_list(check_path);
+	init_list_status(old_list->child, UNCHCK);
 
 	while(true) {
 
 		change_list_cnt = 0;
 
 		new_list = make_list(check_path); // 현재 파일 목록 및 상태 저장
-		new_list_cnt = count_file(new_list->child); // 현재 목록에 존재하는 파일 개수
 		init_list_status(new_list->child, UNCHCK); // 현재 파일 목록 모니터링 상태 초기화
-
-		if(is_first) { // 최초 실행일 경우
-			old_list = new_list;
-			old_list_cnt = new_list_cnt;
-			is_first = false;
-			continue;
-		}
 
 		compare_list(new_list->child, old_list->child); // 파일 목록 트리 비교
 		change_list_cnt = write_change_list(new_list->child, change_list_cnt, CREATE); // 생성된 파일 확인
@@ -59,12 +49,10 @@ void monitoring(void) // 모니터링
 		free_list(old_list);
 
 		old_list = new_list;
-		old_list_cnt = new_list_cnt;
 		init_list_status(old_list->child, UNCHCK);
 
 		sleep(1);
 	}
-	exit(0);
 }
 
 
