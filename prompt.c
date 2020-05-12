@@ -578,6 +578,7 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 	char date[BUFFER_SIZE];
 	char time[BUFFER_SIZE];
 	char path[MAX_BUFFER_SIZE];
+	char file_name[BUFFER_SIZE];
 	char tmp[MAX_BUFFER_SIZE];
 	struct tm tmp_tm;
 	FILE *fp;
@@ -642,8 +643,70 @@ void delete_trash_oldest(void) // 휴지통에서 가장 오래 삭제된 파일
 	else // 파일일 경우
 		unlink(old_path);
 	unlink(old_info);
-	chdir(pwd);
 	free(namelist);
+
+	// 중복 파일 정리
+	is_first = false;
+
+	sscanf(old_name, "%d_%s", &i, old_name); // 중복 번호, 파일 이름 추출
+	strncpy(file_name, old_name, strlen(old_name) - 4);
+
+	// 중복 파일이 두개만 존재했었을 경우
+	if(i == 1) {
+		sprintf(tmp, "%d_%s", i + 2, old_name); 
+		if(access(tmp, F_OK) < 0) { // 존재하지 않을 경우 
+
+			// 정보 파일 정리
+			sprintf(tmp, "%d_%s", i + 1, old_name);
+			sprintf(path, "%s", old_name);
+			rename(tmp, path);
+
+			// 원본 파일 정리
+			sprintf(tmp, "%s/%s/%d_%s", pwd, TRASH_FILES, i + 1, file_name);
+			sprintf(path, "%s/%s/%s", pwd, TRASH_FILES, file_name);
+			rename(tmp, path);
+
+			is_first = true;
+		}
+	} else if(i == 2) { // 중복 파일이 두개만 존재했었을 경우
+		sprintf(tmp, "%d_%s", i + 1, old_name); 
+		if(access(tmp, F_OK) < 0) { // 존재하지 않을 경우 
+			
+			// 정보 파일 정리
+			sprintf(tmp, "%d_%s", i - 1, old_name);
+			sprintf(path, "%s", old_name);
+			rename(tmp, path);
+
+			// 원본 파일 정리
+			sprintf(tmp, "%s/%s/%d_%s", pwd, TRASH_FILES, i - 1, file_name);
+			sprintf(path, "%s/%s/%s", pwd, TRASH_FILES, file_name);
+			rename(tmp, path);
+
+			is_first = true;
+		}
+	}
+
+	while(!is_first) {
+
+		sprintf(tmp, "%d_%s", i + 1, old_name);
+
+		if(access(tmp, F_OK) < 0) // 중복 파일 일 때 이후 번호의 파일이 존재할 경우
+			break;
+
+		// 정보 파일 정리
+		sprintf(tmp, "%d_%s", i + 1, old_name);
+		sprintf(path, "%d_%s", i, old_name);
+		rename(tmp, path);
+
+		// 원본 파일 정리
+		sprintf(tmp, "%s/%s/%d_%s", pwd, TRASH_FILES, i + 1, file_name);
+		sprintf(path, "%s/%s/%d_%s", pwd, TRASH_FILES, i, file_name);
+		rename(tmp, path);
+
+		i++;
+	}
+	chdir(pwd);
+
 }
 
 int find_trash_overlap(const char *file_name) // 휴지통 중복 파일 탐색
@@ -896,18 +959,18 @@ void restore_file(const char *file_name, int option_l) // 휴지통 파일 복�
 	scanf("%d", &i);
 	getchar();
 
-	if(i < 1 || i >= idx) {
+	if(i < 1 || i > idx) {
 		fprintf(stderr, "recover: invalid input NUMBER\n");
 		return;
 	}
 
-	temp = get_file_path(file_info[i].path, file_name);
+	temp = get_file_path(file_info[i - 1].path, file_name);
 	if(access(temp, F_OK) < 0) { // 복원 지점까지의 경로가 존재하지 않을 경우
 		fprintf(stderr, "recover: %s path doesn't exist\n", temp);
 		return;
 	}
 
-	if(access(file_info[i].path, F_OK) < 0) { // c. 복원 지점에 똑같은 이름의 파일이 존재하지 않는 경우
+	if(access(file_info[i - 1].path, F_OK) < 0) { // c. 복원 지점에 똑같은 이름의 파일이 존재하지 않는 경우
 
 		// 정보 파일 삭제 
 		sprintf(tmp, "%s/%s/%d_%s.txt", pwd, TRASH_INFO, i, file_name); // 휴지통 정보 파일 경로 생성
