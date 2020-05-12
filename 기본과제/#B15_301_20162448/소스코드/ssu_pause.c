@@ -8,12 +8,12 @@ void ssu_alarm(int signo);
 int main(void){
 
 	printf("Alarm Setting\n");
-	signal(SIGALRM, ssu_alarm); // set SIGALRM signal
-	alarm(2); // wait until 2 seconds
+	signal(SIGALRM, ssu_alarm); // SIGALRM에 사용자정의 시그널 등록
+	alarm(2); // 2초후 자기 자신에게 SIGALRM을 보냄
 
 	while(1){
 		printf("done\n");
-		pause(); // wait until catch alarm signal
+		pause(); // SIGALRM시그널이 보내지기 전까지 대기
 		alarm(2);
 	}
 
