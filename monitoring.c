@@ -14,9 +14,6 @@ void monitoring(void) // 모니터링
 	int change_list_cnt;
 	time_t start_t;
 
-	// 프로세스 이름 변경
-	prctl(PR_SET_NAME, "ssu_mntr-daemon\0", NULL, NULL, NULL);
-
 	getcwd(pwd, BUFFER_SIZE);
 	sprintf(check_path, "%s/%s", pwd, CHECK);
 	sprintf(log_path, "%s/%s", pwd, LOG);
@@ -31,6 +28,9 @@ void monitoring(void) // 모니터링
 	fclose(fp);
 
 	set_daemon_process(); // 데몬프로세스화
+
+	// 프로세스 이름 변경
+	prctl(PR_SET_NAME, "ssu_mntr-daemon\0", NULL, NULL, NULL);
 
 	start_t = time(NULL);
 	is_first = true;
