@@ -767,10 +767,7 @@ void print_list_size(file_node *head, char *path, int number, int option_d, int 
 
 	now = head;
 
-	while(number > 0) {
-
-		if(now == NULL) // 파일이 존재하지 않을 경우
-			break;
+	while(number > 0 && now != NULL) {
 
 		relative_path = now->name + strlen(pwd); // 상대 경로 추출
 		printf("%-10d.%-s\n", now->size, relative_path); // 출력
@@ -1139,7 +1136,7 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 
 	now = head;
 
-	while(true) {
+	while(now != NULL) {
 		file_name = get_file_name(now->name);
 
 		if(is_root) { // 루트 디렉토리 노드일 경우 디렉토리 이름만 출력 후 하위 파일 노드로 이동
@@ -1175,10 +1172,8 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 					print_list_tree(now->child, level + 1, level_check, is_root);
 		}
 
-		if(now->next != NULL)
-			now = now->next;
+		now = now->next;
 
-		else break;
 	}	
 }
 
