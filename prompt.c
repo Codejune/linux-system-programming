@@ -327,11 +327,11 @@ commands make_command_token(char *command_line) // 명령어 전체 문장 토�
 	}
 
 	to_lower_case(command); // 명령어 소문자화
-	result.argv[result.argc] = (char *)calloc(strlen(command), sizeof(char)); // 메모리 공간 할당
+	result.argv[result.argc] = (char *)calloc(BUFFER_SIZE, sizeof(char)); // 메모리 공간 할당
 	strcpy(result.argv[result.argc++], command); // 토큰 배열에 복사
 
 	while((tmp = strtok(NULL, " ")) != NULL) { // 나머지 인자 복사
-		result.argv[result.argc] = (char *)calloc(strlen(command), sizeof(char)); // 메모리 공간 할당
+		result.argv[result.argc] = (char *)calloc(BUFFER_SIZE, sizeof(char)); // 메모리 공간 할당
 		strcpy(result.argv[result.argc++], tmp); // 토큰 배열에 복사
 	}
 
@@ -355,7 +355,7 @@ int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 		return EXIT;
 	else if(!strcmp(command, "help"))
 		return HELP;
-	else
+	else 
 		return UNKNOWN;
 }
 
