@@ -753,7 +753,7 @@ int find_trash_overlap(const char *file_name) // 휴지통 중복 파일 탐색
 
 	if(overlap_count > 0) {
 		chdir(pwd);
-		return overlap_count + 1;
+		return overlap_count;
 	}
 
 	chdir(pwd);
