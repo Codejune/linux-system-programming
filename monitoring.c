@@ -34,6 +34,8 @@ void monitoring(void) // 모니터링
 
 	while(true) {
 
+		change_list_cnt = 0;
+
 		new_list = make_list(check_path); // 현재 파일 목록 및 상태 저장
 
 		compare_list(new_list->child, old_list->child); // 파일 목록 트리 비교
