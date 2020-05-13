@@ -56,7 +56,7 @@ file_node *make_list(char *path) // 디렉토리 파일 목록 트리화
 			now = now->next;
 		}
 	}
-	head->size = count_size(head->child);
+	head->size = count_size(head);
 	return head;
 }
 
@@ -66,7 +66,11 @@ int count_size(file_node *head) // 디렉토리 크기 반환
 	int size;
 
 	size = false;
-	now = head;
+
+	if(S_ISDIR(head->attr.st_mode))
+		now = head->child;
+	else 
+		return head->attr.st_size;
 
 	while(now != NULL) {
 		size += now->size;
