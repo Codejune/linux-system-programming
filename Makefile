@@ -29,30 +29,32 @@ LIBS =
 # Include path
 INC = 
 
-# Execute program file grneration
+# Execute file grneration
 # $@ = TARGET
+# $^ = DEPENDENCY
+# make all: Make all execute file
+all : $(OBJS)
+	$(CC) -o $(CRONTAB) $(CRONTAB_OBJS) $(LIBS)
+	$(CC) -o $(RSYNC) $(RSYNC_OBJS) $(LIBS)
 $(CRONTAB) : $(CRONTAB_OBJS)
-	$(CC) -o $@ $(CRONTAB_OBJS) $(LIBS)
+	$(CC) -o $@ $^ $(LIBS)
 $(RSYNC) : $(RSYNC_OBJS)
-	$(CC) -o $@ $(RSYNC_OBJS) $(LIBS)
+	$(CC) -o $@ $^ $(LIBS)
 
 # Object file generation
 $(OBJS): $(HDRS)
 	$(CC) $(CFLAGS) $(SRCS)
 
-# Dependency
+# make dep: Make dependency information file
 dep:
 	$(CC) -M $(INC) $(SRCS) > .dependency
 
-# make all
-all: $(CRONTAB) $(RSYNC)
-
-# make new
+# make new: Re-generation 
 new:
 	$(MAKE) clean
 	$(MAKE)
 
-# make clean
+# make clean: Remove all generated file
 clean:
-	rm -rf $(OBJS) $(CRONTAB) $(RSYNC) core
+	rm -rf $(OBJS) $(CRONTAB) $(RSYNC)
 
