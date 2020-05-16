@@ -1,18 +1,23 @@
-ssu_mntr: support.o monitoring.o prompt.o ssu_mntr.o common.h monitoring.h prompt.h
-	gcc -o ssu_mntr ssu_mntr.o monitoring.o prompt.o support.o
+.SUFFIXES: .c .o
 
-support.o: support.c common.h
-	gcc -c support.c
+TARGET = ssu_mntr
+CC = gcc
+CFLAGS = -g -Wall -Wextra -c
+INC = 
 
-monitoring.o: monitoring.c common.h monitoring.h
-	gcc -c monitoring.c
+OBJECTS = support.o monitoring.o prompt.o ssu_mntr.o
+SRCS = support.c monitoring.c prompt.c ssu_mntr.c
 
-prompt.o : prompt.c common.h prompt.h
-	gcc -c prompt.c
+$(TARGET): $(OBJECTS)
+	$(CC) -o $(TARGET) $(OBJECTS)
 
-ssu_mntr.o: ssu_mntr.c common.h
-	gcc -c ssu_mntr.c
+$(OBJECTS): common.h monitoring.h prompt.h
+	$(CC) $(CFLAGS) $(SRCS)
+
+.c.o:
+	$(cc) $(INC) $(CFLAGS) 
 
 clean:
-	rm *.o
-	rm ssu_mntr
+	rm $(OBJECTS) $(TARGET)
+
+
