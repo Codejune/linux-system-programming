@@ -8,7 +8,6 @@ typedef struct ssu_changeItem { // 변경사항 구조체
 
 void monitoring(void); // 모니터링
 void init_list_status(file_node *head, int status); // 모니터링 파일 상태 초기화 
-int count_file(file_node *head); // 파일 개수 반환 
 void compare_list(file_node *new_list, file_node *old_list); // 파일 목록 트리 비교
 int compare_file(file_node *new_file, file_node *old_file); // 파일 정보 비교
 int write_change_list(file_node *head, int idx, int status); // 변경 사항 목록 작성

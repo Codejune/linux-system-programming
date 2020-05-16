@@ -327,11 +327,11 @@ commands make_command_token(char *command_line) // 명령어 전체 문장 토�
 	}
 
 	to_lower_case(command); // 명령어 소문자화
-	result.argv[result.argc] = (char *)calloc(strlen(command), sizeof(char)); // 메모리 공간 할당
+	result.argv[result.argc] = (char *)calloc(BUFFER_SIZE, sizeof(char)); // 메모리 공간 할당
 	strcpy(result.argv[result.argc++], command); // 토큰 배열에 복사
 
 	while((tmp = strtok(NULL, " ")) != NULL) { // 나머지 인자 복사
-		result.argv[result.argc] = (char *)calloc(strlen(command), sizeof(char)); // 메모리 공간 할당
+		result.argv[result.argc] = (char *)calloc(BUFFER_SIZE, sizeof(char)); // 메모리 공간 할당
 		strcpy(result.argv[result.argc++], tmp); // 토큰 배열에 복사
 	}
 
@@ -355,7 +355,7 @@ int get_command_type(char *command) // COMMAND 타입 확인 및 반환
 		return EXIT;
 	else if(!strcmp(command, "help"))
 		return HELP;
-	else
+	else 
 		return UNKNOWN;
 }
 
@@ -753,7 +753,7 @@ int find_trash_overlap(const char *file_name) // 휴지통 중복 파일 탐색
 
 	if(overlap_count > 0) {
 		chdir(pwd);
-		return overlap_count + 1;
+		return overlap_count;
 	}
 
 	chdir(pwd);
@@ -767,10 +767,7 @@ void print_list_size(file_node *head, char *path, int number, int option_d, int 
 
 	now = head;
 
-	while(number > 0) {
-
-		if(now == NULL) // 파일이 존재하지 않을 경우
-			break;
+	while(number > 0 && now != NULL) {
 
 		relative_path = now->name + strlen(pwd); // 상대 경로 추출
 		printf("%-10d.%-s\n", now->size, relative_path); // 출력
@@ -1139,7 +1136,7 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 
 	now = head;
 
-	while(true) {
+	while(now != NULL) {
 		file_name = get_file_name(now->name);
 
 		if(is_root) { // 루트 디렉토리 노드일 경우 디렉토리 이름만 출력 후 하위 파일 노드로 이동
@@ -1175,10 +1172,8 @@ void print_list_tree(file_node *head, int level, int level_check[], int is_root)
 					print_list_tree(now->child, level + 1, level_check, is_root);
 		}
 
-		if(now->next != NULL)
-			now = now->next;
+		now = now->next;
 
-		else break;
 	}	
 }
 
