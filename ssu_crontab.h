@@ -21,6 +21,15 @@
 #define UNKNOWN 5
 
 /**
+ * @brief 주기 타입 번호
+ */
+#define MINUTE      1
+#define HOUR        2
+#define DAY         3
+#define MONTH       4
+#define DAY_OF_WEEK 5
+
+/**
  * @brief 파일 이름
  */
 #define CRONTAB_FILE "ssu_crontab_file"
@@ -40,6 +49,8 @@ char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void to_lower_case(char *str); // 문자열 소문자 변환
 void get_reservation_command(void); // 예약 명령 목록 가져오기
 void print_reservation_list(void); // 예약 명령 목록 출력
+bool is_period(char *period, int period_type); // 주기 인자 검사
+bool is_period_character(char c); // 주기 문자 검사
 void write_reservation_file(void); // 예약 명령 목록 파일 기록
 void write_log(int command_type, char *command); // 로그 파일에 이력 기록
 void free_command_token(CommandToken *command); // 토큰 구조체 메모리 해제

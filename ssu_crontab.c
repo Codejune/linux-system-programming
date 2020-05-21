@@ -67,12 +67,13 @@ void prompt(void) // 프롬프트 메인
 				}
 
 				for (int i = 1; i < command.argc; i++) { // 예약 명령 문자열 생성
-					if (i < 6) // PERIOD 오류 탐색
-						if (command.argv[i][0] < '0' || command.argv[i][0] > '9')
-							if(command.argv[i][0] != '*') {
-								is_invalid = true;
-								break;
-							}
+
+					// PERIOD 오류 검사
+					if (i < 6) 
+						if (!is_period(command.argv[i], i)) {
+							is_invalid = true;
+							break;
+						}
 
 					if (i == 1) {
 						sprintf(command_buffer, "%s", command.argv[i]);
@@ -243,7 +244,7 @@ void get_reservation_command(void) // 예약 명령 목록 가져오기
 	reservation_count = 0;
 
 	if ((fp = fopen(CRONTAB_FILE, "r+")) < 0) {
-		fprintf(stderr, "print_crontab_file: fopen error for %s\n", CRONTAB_FILE);
+		fprintf(stderr, "get_reservation_command: fopen error for %s\n", CRONTAB_FILE);
 		return;
 	}
 
@@ -265,6 +266,164 @@ void print_reservation_list(void) // 예약 명령 목록 출력
 	for(int i = 0; i < reservation_count; i++)
 		printf("%d. %s\n", i, reservation_command[i]);
 	printf("\n");
+}
+
+/**
+ * @brief 주기 인자 검사
+ * @param period 주기 문자열
+ * @param period_type 주기 타입 번호
+ */
+bool is_period(char *period, int period_type) // 주기 인자 검사
+{
+
+	int length = strlen(period);
+	char period_buffer[MAX_BUFFER_SIZE];
+	char period_token[BUFFER_SIZE][BUFFER_SIZE];
+	int period_token_count = 0;
+	char *tmp;
+	char target[BUFFER_SIZE];
+	char unit[BUFFER_SIZE];
+	char operator;
+
+	// 복사본 문자열 생성
+	strcpy(period_buffer, period);
+
+	// 주기 문자 검사
+	for(int i = 0; i < length; i++) {
+		if (!is_period_character(period_buffer[i])) 
+			return false;
+	}
+
+	// 1-1. 쉼표(,) 분리
+	if ((tmp = strtok(period_buffer, ",")) == NULL) // 쉼표 앞에 아무것도 존재하지 않을 경우
+		return false;
+
+	// 1-2. 맨 앞에 기호만 나왔을 경우
+	if (tmp[0] == '-' || tmp[0] == '/')
+		return false;
+#ifdef DEBUG
+	printf("is_period(): type = %d, period_token[%d] = %s\n", period_type, period_token_count, tmp);
+#endif
+	strcpy(period_token[period_token_count++], tmp);
+	while ((tmp = strtok(NULL, ",")) != NULL) 
+#ifdef DEBUG
+	{
+		// 1-2. 맨 앞에 기호만 나왔을 경우
+		if (tmp[0] == '-' || tmp[0] == '/')
+			return false;
+		printf("is_period(): type = %d, period_token[%d] = %s\n", period_type, period_token_count, tmp);
+		strcpy(period_token[period_token_count++], tmp);
+	}
+#else
+	strcpy(period_token[period_token_count++], tmp);
+#endif
+
+	// 2. 슬래쉬(/), 바(-) 분리
+	for(int i = 0; i < period_token_count; i++) {
+		operator = 0;
+		memset(target, 0, BUFFER_SIZE);
+		memset(unit, 0, BUFFER_SIZE);
+		sscanf(period_token[i], "%[^/]%[-/]%s", target, &operator, unit); // 슬래시 우선 토큰 분리
+#ifdef DEBUG
+		printf("is_period(): target = %s, operator = %c, unit = %s\n", target, operator, unit);
+#endif
+	}
+
+	// 3. 범위를 초과 탐색
+	if (operator == '-') { // 슬래시(/)가 존재하지 않을 경우
+
+		// 3-1. 시작, 끝범위가 전체(*)로 끝날 경우
+		if(target[0] == '*' || unit[0] == '*') 
+			return false;
+
+		if(atoi(target) < atoi(unit)) // 앞의 수가 뒤의 수보다 작을 경우
+			return false;
+
+		switch (period_type) {
+			case MINUTE:
+
+				if(atoi(target) < 0 || atoi(target) > 59) // 앞의 수가 범위를 초과할 경우
+					return false;
+				else if(atoi(unit) < 0 || atoi(target) > 59) // 뒤의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case HOUR:
+
+				if(atoi(target) < 0 || atoi(target) > 23) // 앞의 수가 범위를 초과할 경우
+					return false;
+				else if(atoi(unit) < 0 || atoi(target) > 23) // 뒤의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case DAY:
+
+				if(atoi(target) < 1 || atoi(target) > 31) // 앞의 수가 범위를 초과할 경우
+					return false;
+				else if(atoi(unit) < 1 || atoi(target) > 31) // 뒤의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case MONTH:
+
+				if(atoi(target) < 1 || atoi(target) > 12) // 앞의 수가 범위를 초과할 경우
+					return false;
+				else if(atoi(unit) < 1 || atoi(target) > 12) // 뒤의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case DAY_OF_WEEK:
+
+				if(atoi(target) < 0 || atoi(target) > 6) // 앞의 수가 범위를 초과할 경우
+					return false;
+				else if(atoi(unit) < 0 || atoi(target) > 6) // 뒤의 수가 범위를 초과할 경우
+					return false;
+				break;
+		}	
+
+	} else if (operator == '/') { // 슬래시(/)가 존재할 경우
+
+		
+
+		
+
+	}
+
+	switch (period_type) {
+		case MINUTE:
+			if(target[0] != '*')
+			break;
+		case HOUR:
+			break;
+		case DAY:
+			break;
+		case MONTH:
+			break;
+		case DAY_OF_WEEK:
+			break;
+
+	}
+	return true;
+}
+
+/**
+ * @brief 주기 문자 검사
+ * @param c 주기 문자
+ */
+bool is_period_character(char c) // 주기 문자 검사
+{
+	if (c == '*')
+		return true;
+	else if (c == '-')
+		return true;
+	else if (c == '/')
+		return true;
+	else if (c == ',')
+		return true;
+	else if (isdigit(c))
+		return true;
+	else
+		return false;
 }
 
 /**
