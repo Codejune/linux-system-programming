@@ -23,6 +23,12 @@ int main(void)
 		fclose(fp);
 	}
 
+	if (access(CRONTAB_LOG, F_OK) < 0) { // 로그 파일 확인
+		if ((fp = fopen(CRONTAB_LOG, "w+")) < 0) // 존재하지 않을 경우 생성
+			fprintf(stderr, "main: fopen error for %s\n", CRONTAB_LOG);
+		fclose(fp);
+	}
+
 	prompt();
 	exit(0); // 정상 종료
 }
@@ -32,49 +38,88 @@ int main(void)
  */
 void prompt(void) // 프롬프트 메인
 {
+	// PROMPT
 	char command_buffer[MAX_BUFFER_SIZE]; // 명령행 버퍼
 	CommandToken command; // 명령행 토큰 구조체
-	FILE *fp;
-	
+
+	// COMMON
+	bool is_invalid;
+
+	// REMOVE
+	int command_number;
+	char tmp[MAX_BUFFER_SIZE];
+
 	while (true) {
-		get_reservation_list();
+		get_reservation_command();
 		print_reservation_list();
 		fputs("20162448>", stdout); // 프롬프트 출력 
 		fgets(command_buffer, MAX_BUFFER_SIZE, stdin); // 명령행 입력 
 		strcpy(command_buffer, ltrim(rtrim(command_buffer))); // 명령행 좌우 공백 제거
 		make_command_token(&command, command_buffer); // 명령행 토큰화
 		switch (get_command_type(command.argv[0])) {
+
 			case ADD: 
 
-				if(command.argc < 7) {
+				is_invalid = false;
+				if(command.argc < 7) { // 인자 개수가 부족할 경우
 					print_usage();
 					break;
 				}
 
-				// 명령행 인자 우선순위
-				// 1. 시간
-				// 2. 명령어
-				memset(command_buffer, 0, MAX_BUFFER_SIZE);
-				for (int i = 1; i < command.argc; i++) {
-					if (strlen(command_buffer) == 0) {
+				for (int i = 1; i < command.argc; i++) { // 예약 명령 문자열 생성
+					if (i < 6) // PERIOD 오류 탐색
+						if (command.argv[i][0] < '0' || command.argv[i][0] > '9')
+							if(command.argv[i][0] != '*') {
+								is_invalid = true;
+								break;
+							}
+
+					if (i == 1) {
 						sprintf(command_buffer, "%s", command.argv[i]);
 						continue;
 					}
 					sprintf(command_buffer, "%s %s", command_buffer, command.argv[i]);
 				}
+
+				if (is_invalid) {
+					fprintf(stderr, "prompt.ADD: invalid PERIOD\n");
+					break;
+				}
 #ifdef DEBUG
 				printf("prompt().ADD: command_buffer = %s\n", command_buffer);
 #endif
-				if ((fp = fopen(CRONTAB_FILE, "r+")) < 0) { // 예약 명령 목록 파일 열기
-					fprintf(stderr, "prompt: fopen error for %s\n", CRONTAB_FILE);
-					return;
-				}
-				fseek(fp, 0, SEEK_END);
-				fprintf(fp, "%s\n", command_buffer);
-				fclose(fp);
+				strcpy(reservation_command[reservation_count], command_buffer); // 예약 목록 배열에 추가
+				write_reservation_file(); // 예약 목록 파일 작성
+				write_log(ADD, command_buffer);
 				break;
 
 			case REMOVE: 
+
+				if (command.argc < 2) {
+					print_usage();
+					break;
+				}
+
+				command_number = atoi(command.argv[1]);
+				if (command_number < 0 || command_number > reservation_count) {
+					fprintf(stderr, "prompt: invalid COMMAND_NUMBER");
+					return;
+				}
+
+				sprintf(command_buffer, "%s", reservation_command[command_number]);
+#ifdef DEBUG
+				printf("prompt().REMOVE: command_buffer = %s\n", command_buffer);
+#endif
+
+				for (int i = command_number; i < reservation_count; i++) { // 삭제할 예약 명령을 맨 끝으로 이동
+					strcpy(tmp, reservation_command[i]);
+					strcpy(reservation_command[i], reservation_command[i + 1]);
+					strcpy(reservation_command[i + 1], tmp);
+				}
+
+				reservation_count--;
+				write_reservation_file();
+				write_log(REMOVE, command_buffer);
 				break;
 
 			case EXIT: 
@@ -90,40 +135,9 @@ void prompt(void) // 프롬프트 메인
 }
 
 /**
- * @brief 예약 명령 목록 가져오기
- */
-void get_reservation_list(void) // 예약 명령 목록 가져오기
-{
-	FILE *fp;
-
-	reservation_count = 0;
-
-	if ((fp = fopen(CRONTAB_FILE, "r+")) < 0) {
-		fprintf(stderr, "print_crontab_file: fopen error for %s\n", CRONTAB_FILE);
-		return;
-	}
-
-	while(fscanf(fp, "%[^\n]\n", reservation_command[reservation_count]) > 0)
-		reservation_count++;
-
-	fclose(fp);
-	
-}
-
-/**
- * @brief 예약 명령 목록 출력
- */
-void print_reservation_list(void) // 예약 명령 목록 출력
-{
-	for(int i = 0; i < reservation_count; i++)
-		printf("%d. %s\n", i, reservation_command[i]);
-	printf("\n");
-}
-
-/**
  * @brief 입력한 명령행을 토큰 구조체로 변환
  * @param command 명령행 토큰 구조체
- * @param command_buffer 명령행 문자열
+ * @param command_buffer 명령 문자열
  */
 void make_command_token(CommandToken *command, char *command_buffer) // 입력한 명령행을 토큰 구조체로 변환
 {
@@ -217,6 +231,100 @@ void to_lower_case(char *str) // 문자열 소문자 변환
 		}
 		i++;
 	}
+}
+
+/**
+ * @brief 예약 명령 목록 가져오기
+ */
+void get_reservation_command(void) // 예약 명령 목록 가져오기
+{
+	FILE *fp;
+
+	reservation_count = 0;
+
+	if ((fp = fopen(CRONTAB_FILE, "r+")) < 0) {
+		fprintf(stderr, "print_crontab_file: fopen error for %s\n", CRONTAB_FILE);
+		return;
+	}
+
+	while(fscanf(fp, "%[^\n]\n", reservation_command[reservation_count]) > 0)
+		reservation_count++;
+#ifdef DEBUG
+	printf("get_reservation_command: reservation_count = %d\n", reservation_count);
+#endif
+
+	fclose(fp);
+
+}
+
+/**
+ * @brief 예약 명령 목록 출력
+ */
+void print_reservation_list(void) // 예약 명령 목록 출력
+{
+	for(int i = 0; i < reservation_count; i++)
+		printf("%d. %s\n", i, reservation_command[i]);
+	printf("\n");
+}
+
+/**
+ * @brief 예약 명령 목록 파일 기록
+ */
+void write_reservation_file(void) // 예약 명령 목록 파일 기록
+{
+	FILE *fp;
+
+	if ((fp = fopen(CRONTAB_FILE, "w+")) < 0) { // 예약 명령 목록 파일 열기
+		fprintf(stderr, "prompt: fopen error for %s\n", CRONTAB_FILE);
+		return;
+	}
+	fseek(fp, 0, SEEK_SET);
+
+	for(int i = 0; i <= reservation_count; i++)
+#ifdef DEBUG
+	{
+		printf("write_reservation_file: reservation_command[%d] = %s\n", i, reservation_command[i]);
+		fprintf(fp, "%s\n", reservation_command[i]);
+	}
+#else
+	fprintf(fp, "%s\n", reservation_command[i]);
+#endif
+
+	fclose(fp);
+}
+
+/**
+ * @brief 로그 파일에 이력 기록
+ * @param command_type 명령 타입 번호
+ * @param command 명령 문자열
+ */
+void write_log(int command_type, char *command) // 로그 파일에 이력 기록
+{
+	FILE *fp;
+	time_t now_t;
+	struct tm *now_tm;
+
+	if ((fp = fopen(CRONTAB_LOG, "r+")) < 0) {
+		fprintf(stderr, "write_log: fopen error for %s\n", CRONTAB_LOG);
+		return;
+	}
+	fseek(fp, 0, SEEK_END);
+
+	time(&now_t);
+	now_tm = localtime(&now_t);
+
+	switch (command_type) {
+		case ADD:
+			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "add", command);
+			break;
+		case REMOVE:
+			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "remove", command);
+			break;
+		case RUN:
+			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "run", command);
+			break;
+	}
+	fclose(fp);
 }
 
 /**
