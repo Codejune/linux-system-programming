@@ -22,6 +22,7 @@
  * @brief 파일 이름
  */
 #define CRONTAB_FILE "ssu_crontab_file"
+#define CRONTAB_LOG "ssu_crontab_log"
 
 typedef struct CommandTokenStruct // 프롬프트 명령행 토큰 구조체
 {
@@ -30,6 +31,8 @@ typedef struct CommandTokenStruct // 프롬프트 명령행 토큰 구조체
 } CommandToken;
 
 void prompt(void); // 프롬프트 메인
+void get_reservation_list(void); // 예약 명령 목록 가져오기
+void print_reservation_list(void); // 예약 명령 목록 출력
 void make_command_token(CommandToken *command, char *command_buffer); // 입력한 명령행을 토큰 구조체로 변환
 int get_command_type(char *command); // 명령 타입 확인 및 번호 변환
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거

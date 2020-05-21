@@ -17,11 +17,11 @@ RSYNC = ssu_rsync
 # Source file
 CRONTAB_SRCS = ssu_crontab.c
 RSYNC_SRCS = ssu_rsync.c
-SRCS = $(CRONTAB_SRCS) $(RSYNC_SRCS)
+SRCS = $(CRONTAB_SRCS) $(CROND_SRCS) $(RSYNC_SRCS)
 # Object file
 CRONTAB_OBJS = $(CRONTAB_SRCS:.c=.o)
 RSYNC_OBJS = $(RSYNC_SRCS:.c=.o)
-OBJS = $(CRONTAB_OBJS) $(RSYNC_OBJS)
+OBJS = $(CRONTAB_OBJS) $(CROND_OBJS) $(RSYNC_OBJS)
 # Header file
 HDRS = 
 # Library file
