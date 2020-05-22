@@ -7,13 +7,21 @@
 
 #define DEBUG
 
+char pwd[MAX_BUFFER_SIZE];
 /**
  * @brief ssu_crond 메인 함수
  */
 int main(void)
 {
-	printf("crond!\n");
+	char command[MAX_BUFFER_SIZE];
+
+	getcwd(pwd, MAX_BUFFER_SIZE);
+#ifdef DEBUG
+	printf("main(): pwd = %s\n", pwd);
+#endif
 	set_daemon_process();
+	sprintf(command, "%s/test.sh");
+	exit(0);
 }
 
 /**
@@ -45,6 +53,9 @@ void set_daemon_process(void) // 데몬 프로세스 설정
 	// #5 루트 디렉토리 이동
 	chdir("/");
 
+#ifdef DEBUG
+	/*
+#endif
 	// #6 모든 파일 디스크럽터 연결 종료
 	maxfd = getdtablesize(); // 모든 파일 디스크럽터 개수 획득
 	for(fd = 0; fd < maxfd; fd++) 
@@ -54,5 +65,8 @@ void set_daemon_process(void) // 데몬 프로세스 설정
 	fd = open("dev/null", O_RDWR); // STDIO 재설정
 	dup(0);
 	dup(0);
+#ifdef DEBUG
+	*/
+#endif
 }
 
