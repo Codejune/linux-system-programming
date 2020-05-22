@@ -1,0 +1,10 @@
+[Unit]
+Description=SSU_Crontab daemon service
+
+[Service]
+Type=simple
+ExecStart=/
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
