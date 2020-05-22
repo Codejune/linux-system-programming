@@ -320,88 +320,218 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 
 	// 2. 슬래쉬(/), 바(-) 분리
 	for(int i = 0; i < period_token_count; i++) {
-		operator = 0;
-		memset(target, 0, BUFFER_SIZE);
-		memset(unit, 0, BUFFER_SIZE);
+		//operator = 0;
+		//memset(target, 0, BUFFER_SIZE);
+		//memset(unit, 0, BUFFER_SIZE);
 		sscanf(period_token[i], "%[^/]%[-/]%s", target, &operator, unit); // 슬래시 우선 토큰 분리
 #ifdef DEBUG
 		printf("is_period(): target = %s, operator = %c, unit = %s\n", target, operator, unit);
 #endif
 	}
 
-	// 3. 범위를 초과 탐색
-	if (operator == '-') { // 슬래시(/)가 존재하지 않을 경우
+	// 3. 슬래시(/)가 존재하지 않을 경우 범위 확인
+	if (operator == '-') {
 
-		// 3-1. 시작, 끝범위가 전체(*)로 끝날 경우
-		if(target[0] == '*' || unit[0] == '*') 
+		// 3-1. 중복된 바(-)가 존재할 경우
+		if (strchr(unit, '-') != NULL)
 			return false;
 
-		if(atoi(target) < atoi(unit)) // 앞의 수가 뒤의 수보다 작을 경우
+		// 3-2. 시작, 끝범위가 전체(*)로 끝날 경우
+		if (strchr(target, '*') != NULL || strchr(unit, '*') != NULL) 
 			return false;
 
+		// 3-3. 뒤의 수가 앞의 수보다 클 경우
+		if (atoi(target) < atoi(unit)) 
+			return false;
+
+		// 3-4 허용 범위를 초과했을 경우
 		switch (period_type) {
 			case MINUTE:
 
-				if(atoi(target) < 0 || atoi(target) > 59) // 앞의 수가 범위를 초과할 경우
+				if (atoi(target) < 0 || atoi(target) > 59) // 앞의 수가 범위를 초과할 경우
 					return false;
-				else if(atoi(unit) < 0 || atoi(target) > 59) // 뒤의 수가 범위를 초과할 경우
+				else if (atoi(unit) < 0 || atoi(unit) > 59) // 뒤의 수가 범위를 초과할 경우
 					return false;
 				break;
 
 			case HOUR:
 
-				if(atoi(target) < 0 || atoi(target) > 23) // 앞의 수가 범위를 초과할 경우
+				if (atoi(target) < 0 || atoi(target) > 23) // 앞의 수가 범위를 초과할 경우
 					return false;
-				else if(atoi(unit) < 0 || atoi(target) > 23) // 뒤의 수가 범위를 초과할 경우
+				else if (atoi(unit) < 0 || atoi(unit) > 23) // 뒤의 수가 범위를 초과할 경우
 					return false;
 				break;
 
 			case DAY:
 
-				if(atoi(target) < 1 || atoi(target) > 31) // 앞의 수가 범위를 초과할 경우
+				if (atoi(target) < 1 || atoi(unit) > 31) // 앞의 수가 범위를 초과할 경우
 					return false;
-				else if(atoi(unit) < 1 || atoi(target) > 31) // 뒤의 수가 범위를 초과할 경우
+				else if (atoi(unit) < 1 || atoi(unit) > 31) // 뒤의 수가 범위를 초과할 경우
 					return false;
 				break;
 
 			case MONTH:
 
-				if(atoi(target) < 1 || atoi(target) > 12) // 앞의 수가 범위를 초과할 경우
+				if (atoi(target) < 1 || atoi(target) > 12) // 앞의 수가 범위를 초과할 경우
 					return false;
-				else if(atoi(unit) < 1 || atoi(target) > 12) // 뒤의 수가 범위를 초과할 경우
+				else if (atoi(unit) < 1 || atoi(unit) > 12) // 뒤의 수가 범위를 초과할 경우
 					return false;
 				break;
 
 			case DAY_OF_WEEK:
 
-				if(atoi(target) < 0 || atoi(target) > 6) // 앞의 수가 범위를 초과할 경우
+				if (atoi(target) < 0 || atoi(target) > 6) // 앞의 수가 범위를 초과할 경우
 					return false;
-				else if(atoi(unit) < 0 || atoi(target) > 6) // 뒤의 수가 범위를 초과할 경우
+				else if (atoi(unit) < 0 || atoi(unit) > 6) // 뒤의 수가 범위를 초과할 경우
 					return false;
 				break;
 		}	
 
-	} else if (operator == '/') { // 슬래시(/)가 존재할 경우
+	} else if (operator == '/') { // 4. 슬래시(/)가 존재할 경우 범위 확인
 
-		
+		// 4-1. 중복된 슬래시(/) 또는 바(-)가 존재할 경우
+		if (strchr(unit, '/') != NULL || strchr(unit, '-') != NULL) 
+			return false;
 
-		
+		// 4-2. 시작, 끝의 범위가 전체(*)로 끝날 경우
+		if ((strchr(target, '*') != NULL && strlen(unit) != 1) || strchr(unit, '*') != NULL) 
+			return false;
 
-	}
+		// 4-3. 앞 토큰이 범위일 경우 
+		if (strchr(target, '-') != NULL) {
+			char front_target[BUFFER_SIZE] = { 0 };
+			char front_unit[BUFFER_SIZE] = { 0 };
+			char front_operator = 0;
 
-	switch (period_type) {
-		case MINUTE:
-			if(target[0] != '*')
-			break;
-		case HOUR:
-			break;
-		case DAY:
-			break;
-		case MONTH:
-			break;
-		case DAY_OF_WEEK:
-			break;
+			sscanf(target, "%[^-]%[-]%s", front_target, &front_operator, front_unit);
+#ifdef DEBUG
+			printf("is_period(): front_target = %s, front_operator = %c, front_unit = %s\n", front_target, front_operator, front_unit);
+#endif
 
+			// 4-4. 중복된 바(-)가 존재할 경우
+			if (strchr(front_unit, '-') != NULL)
+				return false;
+
+			// 4-5. 시작, 끝범위가 전체(*)로 끝날 경우
+			if (strchr(front_target, '*') != NULL || strchr(front_unit, '*') != NULL) 
+				return false;
+
+			// 4-6. 앞의 수가 뒤의 수보다 작을 경우
+			if (atoi(front_target) > atoi(front_unit)) 
+				return false;
+
+			// 4-7 허용 범위를 초과했을 경우
+			switch (period_type) {
+				case MINUTE:
+
+					if (atoi(front_target) < 0 || atoi(front_target) > 59) // 앞의 수가 범위를 초과할 경우
+						return false;
+					else if (atoi(front_unit) < 0 || atoi(front_unit) > 59) // 뒤의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case HOUR:
+
+					if (atoi(front_target) < 0 || atoi(front_target) > 23) // 앞의 수가 범위를 초과할 경우
+						return false;
+					else if (atoi(front_unit) < 0 || atoi(front_unit) > 23) // 뒤의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case DAY:
+
+					if (atoi(front_target) < 1 || atoi(front_target) > 31) // 앞의 수가 범위를 초과할 경우
+						return false;
+					else if (atoi(front_unit) < 1 || atoi(front_unit) > 31) // 뒤의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case MONTH:
+
+					if (atoi(front_target) < 1 || atoi(front_target) > 12) // 앞의 수가 범위를 초과할 경우
+						return false;
+					else if (atoi(front_unit) < 1 || atoi(front_unit) > 12) // 뒤의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case DAY_OF_WEEK:
+
+					if (atoi(front_target) < 0 || atoi(front_target) > 6) // 앞의 수가 범위를 초과할 경우
+						return false;
+					else if (atoi(front_unit) < 0 || atoi(front_unit) > 6) // 뒤의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+			} 
+		} else { // 4-8. 앞 토큰이 범위가 아닐 경우
+
+			// 4-9. 시작 범위가 숫자일 때 허용 범위 초과했을 경우
+			if (strchr(target, '*') == NULL)
+				switch (period_type) {
+					case MINUTE:
+
+						if (atoi(target) < 0 || atoi(target) > 59) // 앞의 수가 범위를 초과할 경우
+							return false;
+						break;
+
+					case HOUR:
+
+						if (atoi(target) < 0 || atoi(target) > 23) // 앞의 수가 범위를 초과할 경우
+							return false;
+						break;
+
+					case DAY:
+
+						if (atoi(target) < 1 || atoi(target) > 31) // 앞의 수가 범위를 초과할 경우
+							return false;
+						break;
+
+					case MONTH:
+
+						if (atoi(target) < 1 || atoi(target) > 12) // 앞의 수가 범위를 초과할 경우
+							return false;
+						break;
+
+					case DAY_OF_WEEK:
+
+						if (atoi(target) < 0 || atoi(target) > 6) // 앞의 수가 범위를 초과할 경우
+							return false;
+						break;
+				}
+
+			// 4-10. 끝 범위가 숫자일 때 허용 범위 초과했을 경우
+			switch (period_type) {
+				case MINUTE:
+
+					if (atoi(unit) < 0 || atoi(unit) > 59) // 앞의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case HOUR:
+
+					if (atoi(unit) < 0 || atoi(unit) > 23) // 앞의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case DAY:
+
+					if (atoi(unit) < 1 || atoi(unit) > 31) // 앞의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case MONTH:
+
+					if (atoi(unit) < 1 || atoi(unit) > 12) // 앞의 수가 범위를 초과할 경우
+						return false;
+					break;
+
+				case DAY_OF_WEEK:
+
+					if (atoi(unit) < 0 || atoi(unit) > 6) // 앞의 수가 범위를 초과할 경우
+						return false;
+					break;
+			}
+		}
 	}
 	return true;
 }
