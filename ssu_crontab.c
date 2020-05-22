@@ -320,10 +320,7 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 
 	// 2. 슬래쉬(/), 바(-) 분리
 	for(int i = 0; i < period_token_count; i++) {
-		//operator = 0;
-		//memset(target, 0, BUFFER_SIZE);
-		//memset(unit, 0, BUFFER_SIZE);
-		sscanf(period_token[i], "%[^/]%[-/]%s", target, &operator, unit); // 슬래시 우선 토큰 분리
+		sscanf(period_token[i], "%[^/(-)]%c%s", target, &operator, unit); // 슬래시 우선 토큰 분리
 #ifdef DEBUG
 		printf("is_period(): target = %s, operator = %c, unit = %s\n", target, operator, unit);
 #endif
@@ -403,7 +400,7 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 			char front_unit[BUFFER_SIZE] = { 0 };
 			char front_operator = 0;
 
-			sscanf(target, "%[^-]%[-]%s", front_target, &front_operator, front_unit);
+			sscanf(target, "%[^-]%c%s", front_target, &front_operator, front_unit);
 #ifdef DEBUG
 			printf("is_period(): front_target = %s, front_operator = %c, front_unit = %s\n", front_target, front_operator, front_unit);
 #endif
