@@ -18,13 +18,13 @@ int main(void)
 	FILE *fp;
 
 	if (access(CRONTAB_FILE, F_OK) < 0) { // 예약 명령 목록 파일 확인
-		if ((fp = fopen(CRONTAB_FILE, "w+")) < 0) // 존재하지 않을 경우 생성
+		if ((fp = fopen(CRONTAB_FILE, "w+")) == NULL) // 존재하지 않을 경우 생성
 			fprintf(stderr, "main: fopen error for %s\n", CRONTAB_FILE);
 		fclose(fp);
 	}
 
 	if (access(CRONTAB_LOG, F_OK) < 0) { // 로그 파일 확인
-		if ((fp = fopen(CRONTAB_LOG, "w+")) < 0) // 존재하지 않을 경우 생성
+		if ((fp = fopen(CRONTAB_LOG, "w+")) == NULL) // 존재하지 않을 경우 생성
 			fprintf(stderr, "main: fopen error for %s\n", CRONTAB_LOG);
 		fclose(fp);
 	}
@@ -53,7 +53,7 @@ void prompt(void) // 프롬프트 메인
 		get_reservation_command();
 		print_reservation_list();
 		fputs("20162448>", stdout); // 프롬프트 출력 
-		fgets(command_buffer, MAX_BUFFER_SIZE, stdin); // 명령행 입력 
+		fgets(command_buffer, MAX_BUFFER_SIZE, stdin); // 명령행 입력
 		strcpy(command_buffer, ltrim(rtrim(command_buffer))); // 명령행 좌우 공백 제거
 		make_command_token(&command, command_buffer); // 명령행 토큰화
 		switch (get_command_type(command.argv[0])) {
@@ -123,9 +123,8 @@ void prompt(void) // 프롬프트 메인
 				write_log(REMOVE, command_buffer);
 				break;
 
-			case EXIT: 
-				exit(0);
-				break;
+			case EXIT:
+				return;
 
 			case UNKNOWN:
 				print_usage();
@@ -243,7 +242,7 @@ void get_reservation_command(void) // 예약 명령 목록 가져오기
 
 	reservation_count = 0;
 
-	if ((fp = fopen(CRONTAB_FILE, "r+")) < 0) {
+	if ((fp = fopen(CRONTAB_FILE, "r+")) == NULL) {
 		fprintf(stderr, "get_reservation_command: fopen error for %s\n", CRONTAB_FILE);
 		return;
 	}
@@ -320,6 +319,9 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 
 	// 2. 슬래쉬(/), 바(-) 분리
 	for(int i = 0; i < period_token_count; i++) {
+		operator = 0;
+		memset(target, 0, BUFFER_SIZE);
+		memset(unit, 0, BUFFER_SIZE);
 		sscanf(period_token[i], "%[^/(-)]%c%s", target, &operator, unit); // 슬래시 우선 토큰 분리
 #ifdef DEBUG
 		printf("is_period(): target = %s, operator = %c, unit = %s\n", target, operator, unit);
@@ -560,7 +562,7 @@ void write_reservation_file(void) // 예약 명령 목록 파일 기록
 {
 	FILE *fp;
 
-	if ((fp = fopen(CRONTAB_FILE, "w+")) < 0) { // 예약 명령 목록 파일 열기
+	if ((fp = fopen(CRONTAB_FILE, "w+")) == NULL) { // 예약 명령 목록 파일 열기
 		fprintf(stderr, "prompt: fopen error for %s\n", CRONTAB_FILE);
 		return;
 	}
@@ -590,7 +592,7 @@ void write_log(int command_type, char *command) // 로그 파일에 이력 기�
 	time_t now_t;
 	struct tm *now_tm;
 
-	if ((fp = fopen(CRONTAB_LOG, "r+")) < 0) {
+	if ((fp = fopen(CRONTAB_LOG, "r+")) == NULL) {
 		fprintf(stderr, "write_log: fopen error for %s\n", CRONTAB_LOG);
 		return;
 	}
