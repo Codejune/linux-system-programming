@@ -9,7 +9,7 @@ CC = gcc
 # -Wextra: Print warning out of -W, -Wall
 # -O2: Optimization
 # -g: Debugging, PLEASE DELETE AFTER PROJECT COMPLETE!
-CFLAGS = -c -W -Wall -Wextra -O2 -g $(INC)
+CFLAGS = -c -W -Wall -Wextra -g $(INC)
 
 # Execute program file
 CRONTAB = ssu_crontab
