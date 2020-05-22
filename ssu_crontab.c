@@ -79,7 +79,8 @@ void prompt(void) // 프롬프트 메인
 						sprintf(command_buffer, "%s", command.argv[i]);
 						continue;
 					}
-					sprintf(command_buffer, "%s %s", command_buffer, command.argv[i]);
+					strcat(command_buffer, " ");
+					strcat(command_buffer, command.argv[i]);
 				}
 
 				if (is_invalid) {
