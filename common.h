@@ -8,14 +8,19 @@
 #include <unistd.h>
 #include <stdbool.h>
 
-#ifndef COMMON_H // Define guard
+#ifndef COMMON_H
 #define COMMON_H
 
-// 1. 시스템 라이브러리
-// 2. 확장 라이브러리
-// 3. 프로젝트 라이브러리
-
-// 매크로
+/**
+ * @brief 버퍼 크기
+ */
 #define BUFFER_SIZE     256
 #define MAX_BUFFER_SIZE 1024
+
+/**
+ * @brief 파일 이름
+ */
+#define CRONTAB_FILE "ssu_crontab_file"
+#define CRONTAB_LOG "ssu_crontab_log"
+
 #endif // COMMON_H

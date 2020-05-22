@@ -1,5 +1,6 @@
 # Execute files
 ssu_crontab
+ssu_crond
 ssu_rsync
 
 # Temporary files

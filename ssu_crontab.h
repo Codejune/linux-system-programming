@@ -6,10 +6,10 @@
 #ifndef SSU_CRONTAB_H // Define Guard
 #define SSU_CRONTAB_H
 
+#include "common.h"
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include "common.h"
 
 /**
  * @brief 명령어 타입 번호
@@ -28,12 +28,6 @@
 #define DAY         3
 #define MONTH       4
 #define DAY_OF_WEEK 5
-
-/**
- * @brief 파일 이름
- */
-#define CRONTAB_FILE "ssu_crontab_file"
-#define CRONTAB_LOG "ssu_crontab_log"
 
 typedef struct CommandTokenStruct // 프롬프트 명령행 토큰 구조체
 {
