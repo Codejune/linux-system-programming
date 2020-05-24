@@ -15,19 +15,23 @@ int main(int argc, char *argv[]){
 		exit(1);
 	}
 
-	if((fd = open(argv[1], O_RDWR)) < 0){ // open record file
+	// 인자로 받은 레코드 파일을 읽기 쓰기 모드로 열기 
+	if((fd = open(argv[1], O_RDWR)) < 0){ 
 		fprintf(stderr, "open error for %s\n", argv[1]);
 		exit(1);
 	}
 
-	if((flags = fcntl(fd, F_GETFL, DUMMY)) == -1){ // get file flags
+	// 파일 플래그 획득
+	if((flags = fcntl(fd, F_GETFL, DUMMY)) == -1){ 
 		fprintf(stderr, "fcntl F_GETFL error\n");
 		exit(1);
 	}
 
-	flags |= O_APPEND; // add Append flag
+	// 플래그 추가
+	flags |= O_APPEND; 
 
-	if(fcntl(fd, F_SETFL, flags) == -1){ // set flags
+	// 플래그 설정
+	if(fcntl(fd, F_SETFL, flags) == -1){ 
 		fprintf(stderr, "fcntl F_SETFL error\n");
 		exit(1);
 	}
@@ -51,6 +55,6 @@ int main(int argc, char *argv[]){
 			exit(1);
 		}
 	}
-	close(fd); // close file descriptor
+	close(fd); 
 	exit(0);
 }

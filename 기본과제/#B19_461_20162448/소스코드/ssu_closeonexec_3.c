@@ -14,6 +14,6 @@ int main(void)
     exit(1);
   }
 
-  printF("CLOSE ON EXEC flag is = %d\n", flag);
+  printf("CLOSE ON EXEC flag is = %d\n", flag);
   exit(0);
 }

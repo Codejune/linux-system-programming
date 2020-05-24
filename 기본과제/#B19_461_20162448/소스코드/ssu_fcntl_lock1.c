@@ -3,6 +3,7 @@
 #include <unistd.h>
 #include <error.h>
 #include <fcntl.h>
+#include <errno.h>
 
 #define NAMESIZE 50
 #define MAXTRIES 5
@@ -34,7 +35,7 @@ int main(int argc, char *argv[])
   lock.l_len = 0L;
 
   while(fcntl(fd, F_SETLK, &lock) == -1) { // read lock 설정
-    if(errno == EACCESS) { // 에러 발생시
+    if(errno == EACCES) { // 에러 발생시
       if(try++ < MAXTRIES) { // 5번 다시 시도
         sleep(1); // 1초 대기
         continue;
@@ -47,7 +48,8 @@ int main(int argc, char *argv[])
   }
 
   sum = 0;
-  while(read(fd, (char *)&record, sizeof(record)) > 0) {
+  fseek(fd, 0, SEEK_SET);
+  while(read(fd, (char*)&record, sizeof(record)) > 0) {
     printf("Employee: %s, Salary: %d\n", record.name, record.salary);
     sum += record.salary;
   }

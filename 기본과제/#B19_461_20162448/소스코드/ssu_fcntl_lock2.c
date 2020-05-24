@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <fcntl.h>
 
-int main(intargc, char *argv[])
+int main(int argc, char *argv[])
 {
   struct flock lock;
   int fd;

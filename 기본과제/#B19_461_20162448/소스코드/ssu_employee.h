@@ -1,7 +1,7 @@
-#define NAME_SIZE 64
+#define NAMESIZE 50
 
 struct ssu_employee{
-	char name [NAME_SIZE];
-	int pid;
+	char name[NAMESIZE];
 	int salary;
+	int pid;
 };
