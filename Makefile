@@ -27,13 +27,6 @@ CROND_OBJS = $(CROND_SRCS:.c=.o)
 RSYNC_OBJS = $(RSYNC_SRCS:.c=.o)
 CRON_SUPPORT_OBJS = $(CRON_SUPPORT_SRCS:.c=.o)
 OBJS = $(CRONTAB_OBJS) $(CROND_OBJS) $(RSYNC_OBJS) $(CRON_SUPPORT_OBJS)
-# Header file
-CRONTAB_HDRS = ssu_crontab.h
-CROND_HDRS = ssu_crond.h
-RSYNC_HDRS = ssu_rsync.h
-CRON_SUPPORT_HDRS = cron_support.h
-#HDRS = $(CRONTAB_HDRS) $(CROND_HDRS) $(RSYNC_OBJS) $(CRON_SUPPORT_HDRS)
-HDRS = 
 # Library file
 LIBS = 
 # Include path

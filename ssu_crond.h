@@ -16,5 +16,4 @@
 
 #define SSU_CROND_SERVICE ssu_crond.service
 
-void set_daemon_process(void); // 데몬 프로세스 설정
 #endif // SSU_CROND_H
