@@ -78,7 +78,7 @@ void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 	idx = *((int*)arg); // 인자 추출
 	strcpy(copy_reservation_command, reservation_command[idx]);
 #ifdef DEBUG
-	printf("reservation_excute(): reservation_command[%d] = %s\n", idx, reservation_command[idx]);
+	printf("reservation_excute(): copy_reservation_command = %s\n", copy_reservation_command);
 #endif
 
 	// 예약 시간 테이블 생성 및 초기화
@@ -96,6 +96,11 @@ void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 			strcat(command, " ");
 		}
 	}
+#ifdef DEBUG
+	printf("reservation_execute(): command = %s\n", command);
+#endif
+
+	//free_command_token(&token);
 
 	// 현재 시간 추출
 	now_t = time(NULL);
@@ -140,6 +145,7 @@ void set_reservation_time_table(char *period, int period_type, bool *reservation
 	char unit[BUFFER_SIZE];
 	char operator;
 	char *tmp;
+	char *last;
 	int period_token_count = 0;
 	int begin; // 예약 시간 테이블 시작
 	int end; // 예약 시간 테이블 끝
@@ -171,9 +177,9 @@ void set_reservation_time_table(char *period, int period_type, bool *reservation
 	}
 
 	// 1. 쉼표(,) 기준 분리
-	tmp = strtok(period, ",");
+	tmp = strtok_r(period, ",", &last);
 	strcpy(period_token[period_token_count++], tmp);
-	while ((tmp = strtok(NULL, ",")) != NULL)
+	while ((tmp = strtok_r(NULL, ",", &last)) != NULL)
 		strcpy(period_token[period_token_count++], tmp);
 
 	// 2. 토큰에 해당하는 시간을 설정

@@ -16,11 +16,14 @@ extern char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
 void make_command_token(CommandToken *command, char *command_buffer) // 입력한 명령행을 토큰 구조체로 변환
 {
 	char *tmp;
-
+	char *last;
+#ifdef DEBUG
+	printf("make_command_token(): command_buffer = %s\n", command_buffer);
+#endif
 	command->argv = (char**)calloc(BUFFER_SIZE, sizeof(char*));
 	command->argc = 0;
 
-	if ((tmp = strtok(command_buffer, " ")) == NULL)
+	if ((tmp = strtok_r(command_buffer, " ", &last)) == NULL)
 		return;
 #ifdef DEBUG
 	printf("make_command_token(): command->argv[%d] = %s\n", command->argc, tmp);
@@ -29,7 +32,7 @@ void make_command_token(CommandToken *command, char *command_buffer) // 입력한 �
 	command->argv[command->argc] = (char *)calloc(BUFFER_SIZE, sizeof(char));
 	strcpy(command->argv[command->argc++], tmp);
 
-	while ((tmp = strtok(NULL, " ")) != NULL) {
+	while ((tmp = strtok_r(NULL, " ", &last)) != NULL) {
 #ifdef DEBUG
 		printf("make_command_token(): command->argv[%d] = %s\n", command->argc, tmp);
 #endif
