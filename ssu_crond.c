@@ -5,8 +5,6 @@
  */
 #include "ssu_crond.h"
 
-#define DEBUG
-
 char pwd[BUFFER_SIZE];
 char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
 

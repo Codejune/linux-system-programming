@@ -5,8 +5,6 @@
  */
 #include "ssu_crontab.h"
 
-#define DEBUG
-
 char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
 
 /**
