@@ -38,12 +38,12 @@ INC =
 # make all: Make all execute file
 all : $(OBJS)
 	$(CC) -o $(CRONTAB) $(CRONTAB_OBJS) $(CRON_SUPPORT_OBJS) $(LIBS)
-	$(CC) -o $(CROND) $(CROND_OBJS) $(CRON_SUPPORT_OBJS) $(LIBS)
+	$(CC) -o $(CROND) $(CROND_OBJS) $(CRON_SUPPORT_OBJS) $(LIBS) -lpthread
 	$(CC) -o $(RSYNC) $(RSYNC_OBJS) $(LIBS)
 $(CRONTAB) : $(CRONTAB_OBJS) $(CRON_SUPPORT_OBJS)
 	$(CC) -o $@ $^ $(LIBS)
 $(CROND) : $(CROND_OBJS) $(CRON_SUPPORT_OBJS)
-	$(CC) -o $@ $^ $(LIBS)
+	$(CC) -o $@ $^ $(LIBS) -lpthread
 $(RSYNC) : $(RSYNC_OBJS)
 	$(CC) -o $@ $^ $(LIBS)
 

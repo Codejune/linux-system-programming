@@ -26,6 +26,25 @@
 #define MONTH       4
 #define DAY_OF_WEEK 5
 
+/**
+ * @brief 파일 이름
+ */
+#define CRONTAB_FILE "ssu_crontab_file"
+#define CRONTAB_LOG "ssu_crontab_log"
+
+/**
+ * @brief 프롬프트 명령행 토큰 구조체
+ * @param argc 인자 개수
+ * @param argv 인자 토큰
+ */
+typedef struct CommandTokenStruct
+{
+	int argc; // 인자 개수
+	char **argv; // 인자 토큰
+} CommandToken;
+
+void make_command_token(CommandToken *command, char *command_buffer); // 입력한 명령행을 토큰 구조체로 변환
+void free_command_token(CommandToken *command); // 토큰 구조체 메모리 해제
 int get_reservation_command(void); // 예약 명령 목록 가져오기
 void write_log(int command_type, char *command); // 로그 파일에 이력 기록
 

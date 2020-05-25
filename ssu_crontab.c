@@ -136,36 +136,6 @@ void prompt(void) // 프롬프트 메인
 }
 
 /**
- * @brief 입력한 명령행을 토큰 구조체로 변환
- * @param command 명령행 토큰 구조체
- * @param command_buffer 명령 문자열
- */
-void make_command_token(CommandToken *command, char *command_buffer) // 입력한 명령행을 토큰 구조체로 변환
-{
-	char *tmp;
-
-	command->argv = (char**)calloc(BUFFER_SIZE, sizeof(char*));
-	command->argc = 0;
-
-	if ((tmp = strtok(command_buffer, " ")) == NULL)
-		return;
-#ifdef DEBUG
-	printf("make_command_token(): command->argv[%d] = %s\n", command->argc, tmp);
-#endif
-
-	command->argv[command->argc] = (char *)calloc(BUFFER_SIZE, sizeof(char));
-	strcpy(command->argv[command->argc++], tmp);
-
-	while ((tmp = strtok(NULL, " ")) != NULL) {
-#ifdef DEBUG
-		printf("make_command_token(): command->argv[%d] = %s\n", command->argc, tmp);
-#endif
-		command->argv[command->argc] = (char *)calloc(BUFFER_SIZE, sizeof(char)); // 명령행 인자 메모리 공간 할당
-		strcpy(command->argv[command->argc++], tmp);
-	}
-}
-
-/**
  * @brief 명령 타입 확인 및 번호 변환
  * @param command 명령 문자열
  * @return 명령 타입 번호
@@ -556,19 +526,6 @@ void write_reservation_file(int count) // 예약 명령 목록 파일 기록
 #endif
 
 	fclose(fp);
-}
-
-/**
- * @brief 명령행 구조체 초기화
- * @param command 명령행 구조체
- */
-void free_command_token(CommandToken *command) // 명령행 구조체 초기화
-{
-	int i;
-
-	for (i = 0; i < command->argc; i++)
-		free(command->argv[i]);
-	free(command->argv);
 }
 
 /**

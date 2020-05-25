@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #include <time.h>
 #include <stdbool.h>
 
@@ -17,11 +18,5 @@
  */
 #define BUFFER_SIZE     256
 #define MAX_BUFFER_SIZE 1024
-
-/**
- * @brief 파일 이름
- */
-#define CRONTAB_FILE "ssu_crontab_file"
-#define CRONTAB_LOG "ssu_crontab_log"
 
 #endif // COMMON_H

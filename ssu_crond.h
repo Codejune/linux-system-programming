@@ -8,6 +8,7 @@
 
 #include <fcntl.h>
 #include <signal.h>
+#include <pthread.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -16,4 +17,6 @@
 
 #define SSU_CROND_SERVICE ssu_crond.service
 
+void *reservation_execute(void *arg); // 예약 명령 실행 스레드
+void set_reservation_time_table(char *period, int period_type, bool *reservation_table); // 예약 시간 테이블 설정
 #endif // SSU_CROND_H

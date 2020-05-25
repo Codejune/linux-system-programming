@@ -12,14 +12,7 @@
 #include "common.h"
 #include "cron_support.h"
 
-typedef struct CommandTokenStruct // 프롬프트 명령행 토큰 구조체
-{
-	int argc; // 인자 개수
-	char **argv; // 인자 토큰
-} CommandToken;
-
 void prompt(void); // 프롬프트 메인
-void make_command_token(CommandToken *command, char *command_buffer); // 입력한 명령행을 토큰 구조체로 변환
 int get_command_type(char *command); // 명령 타입 확인 및 번호 변환
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
@@ -28,7 +21,6 @@ void print_reservation_list(int count); // 예약 명령 목록 출력
 bool is_period(char *period, int period_type); // 주기 인자 검사
 bool is_period_character(char c); // 주기 문자 검사
 void write_reservation_file(int count); // 예약 명령 목록 파일 기록
-void free_command_token(CommandToken *command); // 토큰 구조체 메모리 해제
 void print_usage(void); // 사용법 출력 
 
 #endif // SSU_CRONTAB_H
