@@ -19,13 +19,20 @@ RSYNC = ssu_rsync
 CRONTAB_SRCS = ssu_crontab.c
 CROND_SRCS = ssu_crond.c
 RSYNC_SRCS = ssu_rsync.c
-SRCS = $(CRONTAB_SRCS) $(CROND_SRCS) $(RSYNC_SRCS)
+CRON_SUPPORT_SRCS = cron_support.c
+SRCS = $(CRONTAB_SRCS) $(CROND_SRCS) $(RSYNC_SRCS) $(CRON_SUPPORT_SRCS)
 # Object file
 CRONTAB_OBJS = $(CRONTAB_SRCS:.c=.o)
 CROND_OBJS = $(CROND_SRCS:.c=.o)
 RSYNC_OBJS = $(RSYNC_SRCS:.c=.o)
-OBJS = $(CRONTAB_OBJS) $(CROND_OBJS) $(RSYNC_OBJS)
+CRON_SUPPORT_OBJS = $(CRON_SUPPORT_SRCS:.c=.o)
+OBJS = $(CRONTAB_OBJS) $(CROND_OBJS) $(RSYNC_OBJS) $(CRON_SUPPORT_OBJS)
 # Header file
+CRONTAB_HDRS = ssu_crontab.h
+CROND_HDRS = ssu_crond.h
+RSYNC_HDRS = ssu_rsync.h
+CRON_SUPPORT_HDRS = cron_support.h
+#HDRS = $(CRONTAB_HDRS) $(CROND_HDRS) $(RSYNC_OBJS) $(CRON_SUPPORT_HDRS)
 HDRS = 
 # Library file
 LIBS = 
@@ -37,18 +44,18 @@ INC =
 # $^ = DEPENDENCY
 # make all: Make all execute file
 all : $(OBJS)
-	$(CC) -o $(CRONTAB) $(CRONTAB_OBJS) $(LIBS)
-	$(CC) -o $(CROND) $(CROND_OBJS) $(LIBS)
+	$(CC) -o $(CRONTAB) $(CRONTAB_OBJS) $(CRON_SUPPORT_OBJS) $(LIBS)
+	$(CC) -o $(CROND) $(CROND_OBJS) $(CRON_SUPPORT_OBJS) $(LIBS)
 	$(CC) -o $(RSYNC) $(RSYNC_OBJS) $(LIBS)
-$(CRONTAB) : $(CRONTAB_OBJS)
+$(CRONTAB) : $(CRONTAB_OBJS) $(CRON_SUPPORT_OBJS)
 	$(CC) -o $@ $^ $(LIBS)
-$(CROND) : $(CROND_OBJS)
+$(CROND) : $(CROND_OBJS) $(CRON_SUPPORT_OBJS)
 	$(CC) -o $@ $^ $(LIBS)
 $(RSYNC) : $(RSYNC_OBJS)
 	$(CC) -o $@ $^ $(LIBS)
 
 # Object file generation
-$(OBJS): $(HDRS)
+$(OBJS):
 	$(CC) $(CFLAGS) $(SRCS)
 
 # make dep: Make dependency information file
@@ -58,7 +65,7 @@ dep:
 # make new: Re-generation 
 new:
 	$(MAKE) clean
-	$(MAKE)
+	$(MAKE) all
 
 # make clean: Remove all generated file
 clean:

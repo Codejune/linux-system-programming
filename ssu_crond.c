@@ -7,20 +7,23 @@
 
 #define DEBUG
 
-char pwd[MAX_BUFFER_SIZE];
+char pwd[BUFFER_SIZE];
+char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
+int reservation_count = 0;
+
 /**
  * @brief ssu_crond 메인 함수
  */
 int main(void)
 {
-	char command[MAX_BUFFER_SIZE];
-
-	getcwd(pwd, MAX_BUFFER_SIZE);
+	getcwd(pwd, BUFFER_SIZE);
 #ifdef DEBUG
 	printf("main(): pwd = %s\n", pwd);
 #endif
 	set_daemon_process();
-	sprintf(command, "%s/test.sh");
+#ifdef DEBUG
+	printf("set_daemon_process(): daemon process running\n");
+#endif
 	exit(0);
 }
 

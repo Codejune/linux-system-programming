@@ -6,28 +6,11 @@
 #ifndef SSU_CRONTAB_H // Define Guard
 #define SSU_CRONTAB_H
 
-#include "common.h"
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-
-/**
- * @brief 명령어 타입 번호
- */
-#define ADD     1
-#define REMOVE  2
-#define RUN     3
-#define EXIT    4
-#define UNKNOWN 5
-
-/**
- * @brief 주기 타입 번호
- */
-#define MINUTE      1
-#define HOUR        2
-#define DAY         3
-#define MONTH       4
-#define DAY_OF_WEEK 5
+#include "common.h"
+#include "cron_support.h"
 
 typedef struct CommandTokenStruct // 프롬프트 명령행 토큰 구조체
 {
@@ -41,12 +24,10 @@ int get_command_type(char *command); // 명령 타입 확인 및 번호 변환
 char *rtrim(char *_str); // 문자열 오른쪽 공백 제거
 char *ltrim(char *_str); // 문자열 왼쪽 공백 제거
 void to_lower_case(char *str); // 문자열 소문자 변환
-void get_reservation_command(void); // 예약 명령 목록 가져오기
-void print_reservation_list(void); // 예약 명령 목록 출력
+void print_reservation_list(int count); // 예약 명령 목록 출력
 bool is_period(char *period, int period_type); // 주기 인자 검사
 bool is_period_character(char c); // 주기 문자 검사
-void write_reservation_file(void); // 예약 명령 목록 파일 기록
-void write_log(int command_type, char *command); // 로그 파일에 이력 기록
+void write_reservation_file(int count); // 예약 명령 목록 파일 기록
 void free_command_token(CommandToken *command); // 토큰 구조체 메모리 해제
 void print_usage(void); // 사용법 출력 
 

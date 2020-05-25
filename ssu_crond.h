@@ -6,12 +6,13 @@
 #ifndef SSU_CROND_H
 #define SSU_CROND_H
 
-#include "common.h"
 #include <fcntl.h>
 #include <signal.h>
-#include <time.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+
+#include "common.h"
+#include "cron_support.h"
 
 #define SSU_CROND_SERVICE ssu_crond.service
 

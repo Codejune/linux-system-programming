@@ -8,7 +8,6 @@
 #define DEBUG
 
 char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
-int reservation_count = 0;
 
 /**
  * @brief ssu_crontab 메인 함수
@@ -43,6 +42,7 @@ void prompt(void) // 프롬프트 메인
 	CommandToken command; // 명령행 토큰 구조체
 
 	// COMMON
+	int reservation_count;
 	bool is_invalid;
 
 	// REMOVE
@@ -50,8 +50,8 @@ void prompt(void) // 프롬프트 메인
 	char tmp[MAX_BUFFER_SIZE];
 
 	while (true) {
-		get_reservation_command();
-		print_reservation_list();
+		reservation_count = get_reservation_command();
+		print_reservation_list(reservation_count);
 		fputs("20162448>", stdout); // 프롬프트 출력 
 		fgets(command_buffer, MAX_BUFFER_SIZE, stdin); // 명령행 입력
 		strcpy(command_buffer, ltrim(rtrim(command_buffer))); // 명령행 좌우 공백 제거
@@ -91,7 +91,7 @@ void prompt(void) // 프롬프트 메인
 				printf("prompt().ADD: command_buffer = %s\n", command_buffer);
 #endif
 				strcpy(reservation_command[reservation_count], command_buffer); // 예약 목록 배열에 추가
-				write_reservation_file(); // 예약 목록 파일 작성
+				write_reservation_file(reservation_count); // 예약 목록 파일 작성
 				write_log(ADD, command_buffer);
 				break;
 
@@ -120,7 +120,7 @@ void prompt(void) // 프롬프트 메인
 				}
 
 				reservation_count--;
-				write_reservation_file();
+				write_reservation_file(reservation_count);
 				write_log(REMOVE, command_buffer);
 				break;
 
@@ -235,35 +235,11 @@ void to_lower_case(char *str) // 문자열 소문자 변환
 }
 
 /**
- * @brief 예약 명령 목록 가져오기
- */
-void get_reservation_command(void) // 예약 명령 목록 가져오기
-{
-	FILE *fp;
-
-	reservation_count = 0;
-
-	if ((fp = fopen(CRONTAB_FILE, "r+")) == NULL) {
-		fprintf(stderr, "get_reservation_command: fopen error for %s\n", CRONTAB_FILE);
-		return;
-	}
-
-	while(fscanf(fp, "%[^\n]\n", reservation_command[reservation_count]) > 0)
-		reservation_count++;
-#ifdef DEBUG
-	printf("get_reservation_command: reservation_count = %d\n", reservation_count);
-#endif
-
-	fclose(fp);
-
-}
-
-/**
  * @brief 예약 명령 목록 출력
  */
-void print_reservation_list(void) // 예약 명령 목록 출력
+void print_reservation_list(int count) // 예약 명령 목록 출력
 {
-	for(int i = 0; i < reservation_count; i++)
+	for(int i = 0; i < count; i++)
 		printf("%d. %s\n", i, reservation_command[i]);
 	printf("\n");
 }
@@ -559,7 +535,7 @@ bool is_period_character(char c) // 주기 문자 검사
 /**
  * @brief 예약 명령 목록 파일 기록
  */
-void write_reservation_file(void) // 예약 명령 목록 파일 기록
+void write_reservation_file(int count) // 예약 명령 목록 파일 기록
 {
 	FILE *fp;
 
@@ -569,7 +545,7 @@ void write_reservation_file(void) // 예약 명령 목록 파일 기록
 	}
 	fseek(fp, 0, SEEK_SET);
 
-	for(int i = 0; i <= reservation_count; i++)
+	for(int i = 0; i <= count; i++)
 #ifdef DEBUG
 	{
 		printf("write_reservation_file: reservation_command[%d] = %s\n", i, reservation_command[i]);
@@ -579,40 +555,6 @@ void write_reservation_file(void) // 예약 명령 목록 파일 기록
 	fprintf(fp, "%s\n", reservation_command[i]);
 #endif
 
-	fclose(fp);
-}
-
-/**
- * @brief 로그 파일에 이력 기록
- * @param command_type 명령 타입 번호
- * @param command 명령 문자열
- */
-void write_log(int command_type, char *command) // 로그 파일에 이력 기록
-{
-	FILE *fp;
-	time_t now_t;
-	struct tm *now_tm;
-
-	if ((fp = fopen(CRONTAB_LOG, "r+")) == NULL) {
-		fprintf(stderr, "write_log: fopen error for %s\n", CRONTAB_LOG);
-		return;
-	}
-	fseek(fp, 0, SEEK_END);
-
-	time(&now_t);
-	now_tm = localtime(&now_t);
-
-	switch (command_type) {
-		case ADD:
-			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "add", command);
-			break;
-		case REMOVE:
-			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "remove", command);
-			break;
-		case RUN:
-			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "run", command);
-			break;
-	}
 	fclose(fp);
 }
 
