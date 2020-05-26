@@ -21,6 +21,9 @@ int main(int argc, char *argv[])
 	struct stat statbuf;
 	time_t now;
 
+	if (access(CRONTAB_LOG, F_OK) < 0)
+		open(CRONTAB_LOG, O_CREAT);
+
 	// 마지막 수정 시간 획득
 	fd = open(CRONTAB_FILE, O_RDONLY);
 	fstat(fd, &statbuf);
@@ -103,12 +106,14 @@ void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 	// 현재 시간 추출
 	now_t = time(NULL);
 	now_tm = *localtime(&now_t);
+	now_tm.tm_sec = 0;
 
 	while (true) {
 
 		now_tm.tm_min++;
 		execute_t = mktime(&now_tm);
 		now_tm = *localtime(&execute_t);
+		now_tm.tm_sec = 0;
 
 		if (reservation_time_table[0][now_tm.tm_min] &&
 				reservation_time_table[1][now_tm.tm_hour] &&
