@@ -13,7 +13,9 @@ char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
 int main(void)
 {
 	FILE *fp;
+	struct timeval begin_t, end_t;
 
+	gettimeofday(&begin_t, NULL);
 	if (access(CRONTAB_FILE, F_OK) < 0) { // 예약 명령 목록 파일 확인
 		if ((fp = fopen(CRONTAB_FILE, "w+")) == NULL) // 존재하지 않을 경우 생성
 			fprintf(stderr, "main: fopen error for %s\n", CRONTAB_FILE);
@@ -27,6 +29,8 @@ int main(void)
 	}
 
 	prompt();
+	gettimeofday(&end_t, NULL);
+	ssu_runtime(&begin_t, &end_t);
 	exit(0); // 정상 종료
 }
 

@@ -11,14 +11,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdbool.h>
 #include <string.h>
 #include <time.h>
-#include <stdbool.h>
+#include <sys/time.h>
 
-/**
- * @brief 버퍼 크기
- */
+// 버퍼 크기
 #define BUFFER_SIZE     256
 #define MAX_BUFFER_SIZE 1024
+
+// 시간 크기
+#define SECOND_TO_MICRO 100000
+
+void ssu_runtime(struct timeval *begin_t, struct timeval *end_t); // 실행시간 출력 
 
 #endif // COMMON_H
