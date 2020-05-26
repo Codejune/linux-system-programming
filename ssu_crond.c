@@ -38,8 +38,9 @@ int main(int argc, char *argv[])
 		for (int i = 0; i < reservation_count; i++) // 획득한 명령 개수만큼의 스레드 시작
 #ifdef DEBUG
 		{
+			printf("ssu_crond(): reservation_command[%d] = %s\n", i, reservation_command[i]);
 #endif
-			pthread_create(&tid[i], NULL, reservation_execute, (void*)&i); // 스레드 생성, 인덱스 전달
+			pthread_create(&tid[i], NULL, reservation_execute, (void*)reservation_command[i]); // 스레드 생성, 인덱스 전달
 #ifdef DEBUG
 			printf("ssu_crond(): tid[%d] = %ld\n", i, tid[i]);
 		}
@@ -62,7 +63,7 @@ int main(int argc, char *argv[])
 
 /**
  * @brief 예약 명령 실행 스레드 
- * @param arg 예약 명령 인덱스
+ * @param arg 예약 명령 문자열
  */
 void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 {
@@ -73,10 +74,8 @@ void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 	time_t execute_t;
 	struct tm now_tm;
 	bool *reservation_time_table[5]; // 예약 시간 테이블
-	int idx; 
 
-	idx = *((int*)arg); // 인자 추출
-	strcpy(copy_reservation_command, reservation_command[idx]);
+	strcpy(copy_reservation_command, (char*)arg);
 #ifdef DEBUG
 	printf("reservation_excute(): copy_reservation_command = %s\n", copy_reservation_command);
 #endif
@@ -96,11 +95,10 @@ void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 			strcat(command, " ");
 		}
 	}
+	//free_command_token(&token);
 #ifdef DEBUG
 	printf("reservation_execute(): command = %s\n", command);
 #endif
-
-	//free_command_token(&token);
 
 	// 현재 시간 추출
 	now_t = time(NULL);
@@ -120,14 +118,14 @@ void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 
 			now_t = time(NULL);
 #ifdef DEBUG
-			printf("reservation_execute(): reservation_command[%d] = execute waitting for %ld second\n", idx, execute_t - now_t);
+			printf("reservation_execute(): %s, execute waitting for %ld second\n", (char*)arg, execute_t - now_t);
 #endif
 			sleep(execute_t - now_t); // 명령어 실행 대기
 #ifdef DEBUG
-			printf("reservation_execute(): reservation_command[%d] = running at %s\n", idx, asctime(&now_tm));
+			printf("reservation_execute(): %s, running at %s\n", (char*)arg, asctime(&now_tm));
 #endif
 			system(command); // 명령어 실행
-			write_log(RUN, reservation_command[idx]);
+			write_log(RUN, (char*)arg);
 		}
 	}
 }
