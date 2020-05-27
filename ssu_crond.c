@@ -13,7 +13,7 @@ char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
  * @param argc 최초 실행시에 제공되는 인자들의 개수
  * @param argv 최초 실행시에 제공되는 파일들의 경로
  */
-int main(int argc, char *argv[])
+int main(void)
 {
 	pthread_t tid[BUFFER_SIZE]; // 스레드 ID 배열
 	int reservation_count; // 예약 명령 개수
