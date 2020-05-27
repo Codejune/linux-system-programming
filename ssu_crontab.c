@@ -256,14 +256,11 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 	while ((tmp = strtok(NULL, ",")) != NULL) 
 #ifdef DEBUG
 	{
-		// 1-2. 맨 앞에 기호만 나왔을 경우
-		if (tmp[0] == '-' || tmp[0] == '/')
-			return false;
 		printf("is_period(): type = %d, period_token[%d] = %s\n", period_type, period_token_count, tmp);
 		strcpy(period_token[period_token_count++], tmp);
 	}
 #else
-	strcpy(period_token[period_token_count++], tmp);
+		strcpy(period_token[period_token_count++], tmp);
 #endif
 
 	// 2. 슬래쉬(/), 바(-) 분리

@@ -1,19 +1,18 @@
 /**
  * @file cron_support.c
- * @brief ssu_crontab, ssu_crond¿¡¼­ °øÅëÀûÀ¸·Î »ç¿ëµÇ´Â ÇÔ¼ö 
- * @author ±èº´ÁØ (kbj9704@gmail.com)
+ * @brief ssu_crontab, ssu_crondì—ì„œ ê³µí†µì ìœ¼ë¡œ ì‚¬ìš©ë˜ëŠ” í•¨ìˆ˜ 
+ * @author ê¹€ë³‘ì¤€ (kbj9704@gmail.com)
  */
-
 #include "cron_support.h"
 
 extern char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
 
 /**
- * @brief ÀÔ·ÂÇÑ ¸í·ÉÇàÀ» ÅäÅ« ±¸Á¶Ã¼·Î º¯È¯
- * @param command ¸í·ÉÇà ÅäÅ« ±¸Á¶Ã¼
- * @param command_buffer ¸í·É ¹®ÀÚ¿­
+ * @brief ì…ë ¥í•œ ëª…ë ¹í–‰ì„ í† í° êµ¬ì¡°ì²´ë¡œ ë³€í™˜
+ * @param command ëª…ë ¹í–‰ í† í° êµ¬ì¡°ì²´
+ * @param command_buffer ëª…ë ¹ ë¬¸ìì—´
  */
-void make_command_token(CommandToken *command, char *command_buffer) // ÀÔ·ÂÇÑ ¸í·ÉÇàÀ» ÅäÅ« ±¸Á¶Ã¼·Î º¯È¯
+void make_command_token(CommandToken *command, char *command_buffer) // ì…ë ¥í•œ ëª…ë ¹í–‰ì„ í† í° êµ¬ì¡°ì²´ë¡œ ë³€í™˜
 {
 	char *tmp;
 	char *last;
@@ -36,16 +35,16 @@ void make_command_token(CommandToken *command, char *command_buffer) // ÀÔ·ÂÇÑ ¸
 #ifdef DEBUG
 		printf("make_command_token(): command->argv[%d] = %s\n", command->argc, tmp);
 #endif
-		command->argv[command->argc] = (char *)calloc(BUFFER_SIZE, sizeof(char)); // ¸í·ÉÇà ÀÎÀÚ ¸Ş¸ğ¸® °ø°£ ÇÒ´ç
+		command->argv[command->argc] = (char *)calloc(BUFFER_SIZE, sizeof(char)); 
 		strcpy(command->argv[command->argc++], tmp);
 	}
 }
 
 /**
- * @brief ¸í·ÉÇà ±¸Á¶Ã¼ ÃÊ±âÈ­
- * @param command ¸í·ÉÇà ±¸Á¶Ã¼
+ * @brief ëª…ë ¹í–‰ êµ¬ì¡°ì²´ ì´ˆê¸°í™”
+ * @param command ëª…ë ¹í–‰ êµ¬ì¡°ì²´
  */
-void free_command_token(CommandToken *command) // ¸í·ÉÇà ±¸Á¶Ã¼ ÃÊ±âÈ­
+void free_command_token(CommandToken *command) // ëª…ë ¹í–‰ êµ¬ì¡°ì²´ ì´ˆê¸°í™”
 {
 	int i;
 
@@ -55,9 +54,9 @@ void free_command_token(CommandToken *command) // ¸í·ÉÇà ±¸Á¶Ã¼ ÃÊ±âÈ­
 }
 
 /**
- * @brief ¿¹¾à ¸í·É ¸ñ·Ï °¡Á®¿À±â
+ * @brief ì˜ˆì•½ ëª…ë ¹ ëª©ë¡ ê°€ì ¸ì˜¤ê¸°
  */
-int get_reservation_command(void) // ¿¹¾à ¸í·É ¸ñ·Ï °¡Á®¿À±â
+int get_reservation_command(void) // ì˜ˆì•½ ëª…ë ¹ ëª©ë¡ ê°€ì ¸ì˜¤
 {
 	FILE *fp;
 
@@ -79,13 +78,13 @@ int get_reservation_command(void) // ¿¹¾à ¸í·É ¸ñ·Ï °¡Á®¿À±â
 }
 
 /**
- * @brief ·Î±× ÆÄÀÏ¿¡ ÀÌ·Â ±â·Ï
- * @param command_type ¸í·É Å¸ÀÔ ¹øÈ£
- * @param command ¸í·É ¹®ÀÚ¿­
+ * @brief ë¡œê·¸ íŒŒì¼ì— ì´ë ¥ ê¸°ë¡
+ * @param command_type ëª…ë ¹ íƒ€ì… ë²ˆí˜¸
+ * @param command ëª…ë ¹ ë¬¸ìì—´
  */
-void write_log(int command_type, char *command) // ·Î±× ÆÄÀÏ¿¡ ÀÌ·Â ±â·Ï
+void write_log(int command_type, char *command) // ë¡œê·¸ íŒŒì¼ì— ì´ë ¥ ê¸°ë¡
 {
-	FILE *fp;
+	//FILE *fp;
 	time_t now_t;
 	struct tm *now_tm;
 	char temp[MAX_BUFFER_SIZE];

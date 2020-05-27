@@ -1,11 +1,11 @@
 #include "common.h"
 
 /**
- * @brief ½ÇÇà ½Ã°£ Ãâ·Â
- * @param begin_t ½ÃÀÛ ½Ã°£
- * @param end_t Á¾·á ½Ã°£
+ * @brief ì‹¤í–‰ ì‹œê°„ ì¶œë ¥ 
+ * @param begin_t ì‹œìž‘ ì‹œê°„
+ * @param end_t ì¢…ë£Œ ì‹œê°„ 
  */
-void ssu_runtime(struct timeval *begin_t, struct timeval *end_t) // ½ÇÇà½Ã°£ Ãâ·Â 
+void ssu_runtime(struct timeval *begin_t, struct timeval *end_t) // ì‹¤í–‰ ì‹œê°„ ì¶œë ¥ 
 {
 	end_t->tv_sec -= begin_t->tv_sec;
 
