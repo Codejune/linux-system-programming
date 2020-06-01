@@ -105,9 +105,15 @@ void prompt(void) // 프롬프트 메인
 				}
 
 				command_number = atoi(command.argv[1]);
+
+				if (reservation_count == 0) {
+					fprintf(stderr, "prompt: no reservation command in ssu_crontab_file\n");
+					break;
+				}
+
 				if (command_number < 0 || command_number > reservation_count) {
-					fprintf(stderr, "prompt: invalid COMMAND_NUMBER");
-					return;
+					fprintf(stderr, "prompt: invalid COMMAND_NUMBER\n");
+					break;
 				}
 
 				sprintf(command_buffer, "%s", reservation_command[command_number]);

@@ -5,7 +5,9 @@
  */
 #include "cron_support.h"
 
-extern char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE];
+FILE *fp;
+pthread_attr_t mutex; // 뮤텍스 객체 선언
+extern char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE]; // 예약 명령 목록
 
 /**
  * @brief 입력한 명령행을 토큰 구조체로 변환
@@ -84,39 +86,39 @@ int get_reservation_command(void) // 예약 명령 목록 가져오
  */
 void write_log(int command_type, char *command) // 로그 파일에 이력 기록
 {
-	//FILE *fp;
 	time_t now_t;
 	struct tm *now_tm;
 	char temp[MAX_BUFFER_SIZE];
 
-	/*
+	pthread_mutex_lock(&mutex);
 	if ((fp = fopen(CRONTAB_LOG, "r+")) == NULL)
 	{
 		fprintf(stderr, "write_log: fopen error for %s\n", CRONTAB_LOG);
 		return;
 	}
 	fseek(fp, 0, SEEK_END);
-*/
+
 	time(&now_t);
 	now_tm = localtime(&now_t);
 
 	switch (command_type) {
 		case ADD:
-			sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "add", command, CRONTAB_LOG);
-			//fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "add", command);
+			//sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "add", command, CRONTAB_LOG);
+			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "add", command);
 			break;
 		case REMOVE:
-			sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "remove", command, CRONTAB_LOG);
-			//fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "remove", command);
+			//sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "remove", command, CRONTAB_LOG);
+			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "remove", command);
 			break;
 		case RUN:
-			sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "run", command, CRONTAB_LOG);
-			//fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "run", command);
+			//sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "run", command, CRONTAB_LOG);
+			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "run", command);
 			break;
 	}
-	system(temp);
+	//system(temp);
 	//fflush(fp);
-	//fclose(fp);
+	fclose(fp);
+	pthread_mutex_unlock(&mutex);
 }
 
 
