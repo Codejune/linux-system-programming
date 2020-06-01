@@ -6,7 +6,7 @@
 #include "cron_support.h"
 
 FILE *fp;
-pthread_attr_t mutex; // 뮤텍스 객체 선언
+pthread_mutex_t mutex; // 뮤텍스 객체 선언
 extern char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE]; // 예약 명령 목록
 
 /**
@@ -88,7 +88,6 @@ void write_log(int command_type, char *command) // 로그 파일에 이력 기�
 {
 	time_t now_t;
 	struct tm *now_tm;
-	char temp[MAX_BUFFER_SIZE];
 
 	pthread_mutex_lock(&mutex);
 	if ((fp = fopen(CRONTAB_LOG, "r+")) == NULL)

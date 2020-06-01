@@ -6,6 +6,7 @@
 #ifndef CRON_SUPPORT_H
 #define CRON_SUPPORT_H
 
+#include <pthread.h>
 #include "common.h"
 
 /**
