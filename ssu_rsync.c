@@ -211,15 +211,15 @@ void syncronize(char *src_path, char *dst_path) // 동기화 함수
 		compare_list(src_list->child, dst_list->child);
 		is_directory = true;
 	} else // 타겟이 파일일 경우
-		compare_file(src_list, dst_list->child, true);
+		compare_file(src_list, dst_list->child);
 
 	if (is_directory)
-		change_count = write_change_list(src_list->child, change_count, CREATE); // 생성 혹은 수정된 파일 확인
+		change_count = write_change_list(src_list->child, change_count, CREATE, true); // 생성 혹은 수정된 파일 확인
 	else 
-		change_count = write_change_list(src_list, change_count, CREATE); // 생성 혹은 수정된 파일 확인
+		change_count = write_change_list(src_list, change_count, CREATE, true); // 생성 혹은 수정된 파일 확인
 
-	if (option_m)
-		change_count = write_change_list(dst_list, change_count, DELETE); // 삭제 혹은 수정된 파일 확인
+	if (option_m) 
+		change_count = write_change_list(dst_list->child, change_count, DELETE, true); // 삭제 혹은 수정된 파일 확인
 
 	free_list(src_list);
 	free_list(dst_list);
@@ -340,9 +340,8 @@ void compare_list(file_node *src_list, file_node *dst_list) // 파일 목록 트
 
 	while (now != NULL) { // 타겟 파일 탐색
 
-		compare_file(now, dst_list, true);
+		compare_file(now, dst_list);
 
-		if (option_r) // R 옵션이 존재하는 경우
 			if (now->child != NULL)
 				compare_list(now->child, dst_list);
 
@@ -354,10 +353,9 @@ void compare_list(file_node *src_list, file_node *dst_list) // 파일 목록 트
  * @brief 파일 정보 비교
  * @param src_file 타겟 파일 노드
  * @param dst_file 동기화 디렉토리 파일 노드
- * @param is_first 첫번째 레벨 확인 변수
  * @return 비교 성공 유무
  */
-bool compare_file(file_node *src_file, file_node *dst_file, bool is_first) // 파일 정보 비교
+bool compare_file(file_node *src_file, file_node *dst_file) // 파일 정보 비교
 {
 	file_node *now;
 
@@ -368,21 +366,24 @@ bool compare_file(file_node *src_file, file_node *dst_file, bool is_first) // �
 #ifdef DEBUG
 		printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", src_file->name + strlen(pwd) + 1, now->name + strlen(pwd) + 1);
 #endif
-		if (!strcmp(src_file->name + strlen(pwd) + 1, now->name + strlen(dst_path) + 1)) { // 해당 이름을 가진 파일이 기존에 이미 존재할 경우
+		if (!strcmp(src_file->name + strlen(pwd) + 1, now->name + strlen(dst_path) + 1)) { // 파일 이름이 같은 경우
 
 #ifdef DEBUG
 			printf("compare_file(): file found\n");
 #endif
 			src_file->status = CHCKED;
 
-			if (src_file->attr.st_mtime != now->attr.st_mtime) { // 해당 파일이 수정되었을 경우
+			if (src_file->attr.st_mode != now->attr.st_mode) { // 1. 파일 형식이 다를 경우
+#ifdef DEBUG
+				printf("compare_file(): type different\n");
+#endif
+				src_file->status = MODIFY;
+			} else if (src_file->attr.st_mtime != now->attr.st_mtime) { // 2. 수정시간이 다를 경우
 #ifdef DEBUG
 				printf("compare_file(): mtime different\n");
 #endif
-				src_file->status = MODIFY; // 타겟 파일의 상태 변경
-			}
-
-			if (src_file->size != now->size) { // 해당 파일의 크기가 변경되었을 경우
+				src_file->status = MODIFY;
+			} else if (src_file->size != now->size) { // 3. 크기가 다를 경우
 
 #ifdef DEBUG
 				printf("compare_file(): size different\n");
@@ -397,9 +398,8 @@ bool compare_file(file_node *src_file, file_node *dst_file, bool is_first) // �
 			return true;
 		}
 
-		if(option_r || is_first)
 			if(now->child != NULL) // 디렉토리 안에 파일이 존재할 경우
-				if(compare_file(src_file, now->child, false)) 
+				if(compare_file(src_file, now->child)) 
 					break;
 
 		now = now->next;
@@ -413,8 +413,9 @@ bool compare_file(file_node *src_file, file_node *dst_file, bool is_first) // �
  * @param head 트리 루트 노드
  * @param idx 변경사항 목록 시작 인덱스
  * @param status 변경 사항 타입 번호
+ * @param is_first 첫번째 레벨 확인 변수
  */
-int write_change_list(file_node *head, int idx, int status) // 변경사항 목록 작성
+int write_change_list(file_node *head, int idx, int status, bool is_first) // 변경사항 목록 작성
 {
 	file_node *now;
 
@@ -426,11 +427,13 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 			case UNCHCK: 
 				if (status == CREATE) { // 생성됨
 					strcpy(change_list[idx].name, now->name);
-					//strcpy(change_list[idx].name, now->name + strlen(src_path) + 1);
 					change_list[idx].status = CREATE;
 				} else if (status == DELETE) { // 삭제됨
+					char tmp[MAX_BUFFER_SIZE];
+					sprintf(tmp, "%s/%s", dst_path, get_file_name(src_path));
+					if(strstr(now->name, tmp) == NULL || !strcmp(now->name, tmp))
+						break;
 					strcpy(change_list[idx].name, now->name);
-					//strcpy(change_list[idx].name, now->name + strlen(dst_path) + 1);
 					change_list[idx].status = DELETE;
 				}
 				change_list[idx++].size = now->size;
@@ -441,7 +444,6 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 
 			case MODIFY: // 수정됨
 				strcpy(change_list[idx].name, now->name);
-				//strcpy(change_list[idx].name, now->name + strlen(src_path) + 1);
 				change_list[idx].status = MODIFY;
 				change_list[idx++].size = now->size;
 #ifdef DEBUG
@@ -450,9 +452,9 @@ int write_change_list(file_node *head, int idx, int status) // 변경사항 목�
 				break;
 		}
 
-		if(option_r)
+		if(option_r || is_first)
 			if (now->child != NULL)
-				idx = write_change_list(now->child, idx, status);
+				idx = write_change_list(now->child, idx, status, false);
 
 		now = now->next;
 	}
