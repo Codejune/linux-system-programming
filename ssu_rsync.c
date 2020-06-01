@@ -11,16 +11,21 @@ char src_path[MAX_BUFFER_SIZE] = { 0 }; // 타겟 경로
 char dst_path[MAX_BUFFER_SIZE] = { 0 }; // 동기화 경로
 char swap_path[MAX_BUFFER_SIZE] = { 0 }; // 스왑 파일
 
+// 옵션
 bool option_r = false; // R 옵션
 bool option_t = false; // T 옵션
 bool option_m = false; // M 옵션
 bool is_complete = false; // 동기화 완료 확인
 
+// 디스크럽터
 int in_fd; // 표준 입력
 int out_fd; // 표준 출력
 int err_fd; // 표준 에러
 
-change_file change_list[BUFFER_SIZE]; // 변경 목록
+file_node change_list[BUFFER_SIZE]; // 변경 목록
+char **saved_argv;
+int saved_argc;
+
 
 /**
  * @brief ssu_rsync 메인 함수
@@ -46,13 +51,15 @@ int main(int argc, char *argv[])
 	gettimeofday(&begin_t, NULL); // 측정 시작
 
 	if (argc < 3) { // 인자 개수가 부족할 경우
-		fprintf(stderr, "ssu_rsync(): Usage: %s [OPTION] <SOURCE> <DESTINATION>\n", argv[0]);
+		print_usage(argv[0]);
 		exit(1);
 	}
 
 	getcwd(pwd, MAX_BUFFER_SIZE);
 	signal(SIGUSR1, swap_handler);
 	signal(SIGUSR2, swap_handler);
+
+	copy_argument(argc, argv);
 
 	for (int i = 1; i < argc; i++) {
 #ifdef DEBUG
@@ -138,13 +145,8 @@ int main(int argc, char *argv[])
 	}
 
 	// 파싱 중 에러 발견
-	if (is_invalid)
-		exit(1);
-	else if (!is_src) {
-		fprintf(stderr, "ssu_rsync(): <SOURCE> doesn't exist\n");
-		exit(1);
-	} else if (!is_dst) {
-		fprintf(stderr, "ssu_rsync(): <DESTINATION> doesn't exist\n");
+	if (is_invalid || !is_src || !is_dst) {
+		print_usage(argv[0]);
 		exit(1);
 	}
 
@@ -167,6 +169,21 @@ int main(int argc, char *argv[])
 	gettimeofday(&end_t, NULL); // 측정 종료
 	ssu_runtime(&begin_t, &end_t); // 실행 시간 출력
 	exit(0);
+}
+
+/**
+ * @brief 명령행 인자 백업 
+ * @param argc 인자 개수
+ * @param argv 인자 문자열 배열
+ */
+void copy_argument(int argc, char *argv[]) // 명령행 인자 백업
+{
+	saved_argc = argc;
+	saved_argv = calloc(argc, sizeof(char*));
+	for(int i = 0; i < saved_argc; i++) {
+		saved_argv[i] = calloc(MAX_BUFFER_SIZE, sizeof(char));
+		strcpy(saved_argv[i], argv[i]);
+	}
 }
 
 /**
@@ -220,6 +237,11 @@ void syncronize(char *src_path, char *dst_path) // 동기화 함수
 
 	if (option_m) 
 		change_count = write_change_list(dst_list->child, change_count, DELETE, true); // 삭제 혹은 수정된 파일 확인
+
+	//if (option_t)
+	//	refresh_tar(change_count);
+	//else
+	renewal(change_count);
 
 	free_list(src_list);
 	free_list(dst_list);
@@ -342,8 +364,8 @@ void compare_list(file_node *src_list, file_node *dst_list) // 파일 목록 트
 
 		compare_file(now, dst_list);
 
-			if (now->child != NULL)
-				compare_list(now->child, dst_list);
+		if (now->child != NULL)
+			compare_list(now->child, dst_list);
 
 		now = now->next;
 	}
@@ -398,9 +420,9 @@ bool compare_file(file_node *src_file, file_node *dst_file) // 파일 정보 비
 			return true;
 		}
 
-			if(now->child != NULL) // 디렉토리 안에 파일이 존재할 경우
-				if(compare_file(src_file, now->child)) 
-					break;
+		if(now->child != NULL) // 디렉토리 안에 파일이 존재할 경우
+			if(compare_file(src_file, now->child)) 
+				break;
 
 		now = now->next;
 	}
@@ -463,6 +485,123 @@ int write_change_list(file_node *head, int idx, int status, bool is_first) // �
 }
 
 /**
+ * @brief 파일 동기화
+ * @param count 변경 사항 개수
+ */
+void renewal(int count) // 파일 동기화
+{
+	int src_fd, dst_fd;
+	char path[MAX_BUFFER_SIZE];
+	char buf[MAX_BUFFER_SIZE];
+	struct stat statbuf;
+	struct utimbuf attr;
+	size_t length;
+
+	for (int i = 0; i < count; i++) {
+
+		switch (change_list[i].status) {
+			case DELETE:
+
+				lstat(change_list[i].name, &statbuf);
+				if (S_ISDIR(statbuf.st_mode))
+					remove_directory(change_list[i].name);
+				else
+					remove(change_list[i].name);
+				break;
+
+			case CREATE:
+			case MODIFY:
+
+				memset(path, 0, MAX_BUFFER_SIZE);
+
+				lstat(change_list[i].name, &statbuf);
+				sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(pwd) + 1); // 동기화 파일 경로 생성
+
+				if (S_ISDIR(statbuf.st_mode)) 
+					mkdir(path, 0755);
+				else {
+					if ((src_fd = open(change_list[i].name, O_RDONLY)) < 0) { // 타겟 읽기 전용 열기
+						fprintf(stderr, "renewal(): open error for %s\n", change_list[i].name);
+						break;
+					}
+
+					if ((dst_fd = open(path, O_WRONLY | O_CREAT | O_TRUNC, statbuf.st_mode)) < 0) { // 동기화 파일 열기
+						fprintf(stderr, "renewal(): open error for %s\n", path);
+						break;
+					}
+
+					while ((length = read(src_fd, buf, MAX_BUFFER_SIZE)) > 0) // 동기화 파일 쓰기 (새로쓰기 혹은 덮어쓰기)
+						write(dst_fd, buf, length);
+
+					close(src_fd);
+					close(dst_fd);
+				}
+
+				// 동기화 파일 속성 및 권한 복원
+				attr.actime = statbuf.st_atime; 
+				attr.modtime = statbuf.st_mtime;
+				utime(path, &attr);
+				chmod(path, statbuf.st_mode);
+				break;
+		}
+	}
+
+	write_log(count);
+}
+
+/**
+ * @brief 로그 파일 작성
+ * @param 변경 사항 개수
+ */
+void write_log(int count) // 로그 파일 작성
+{
+	FILE *fp;
+	time_t now_t;
+	struct tm *now_tm;
+	char command[MAX_BUFFER_SIZE];
+
+	if (count == 0) {
+		fprintf(stderr, "write_log(): up-to-date %s\n", dst_path);
+		return;
+	}
+
+	if ((fp = fopen(RSYNC_LOG, "r+")) == NULL) // 로그파일 열기
+		fp = fopen(RSYNC_LOG, "w"); // 존재하지 않을 경우 생성
+
+	fseek(fp, 0, SEEK_END); 
+
+	// 헤더 명령행 문자열 생성
+	strcpy(command, get_file_name(saved_argv[0]));
+	for (int i = 1; i < saved_argc; i++) {
+		strcat(command, " ");
+		strcat(command, saved_argv[i]);
+	}
+
+#ifdef DEBUG
+	printf("write_log(): command = %s\n", command);
+#endif
+
+	// 헤더 시간 생성
+	time(&now_t);
+	now_tm = localtime(&now_t);
+
+	fprintf(fp, "[%.24s] %s\n", asctime(now_tm), command); // 헤더 라인 쓰기
+
+	//if(option_p)
+
+	for (int i = 0; i < count; i++) // 변경 사항 쓰기
+		switch (change_list[i].status) {
+			case DELETE:
+				fprintf(fp, "        %s delete\n",  change_list[i].name + strlen(dst_path) + 1);
+				break;
+			case CREATE:
+			case MODIFY:
+				fprintf(fp, "        %s %dbytes\n",  change_list[i].name + strlen(src_path) + 1, change_list[i].size);
+				break;
+		}
+}
+
+/**
  * @brief 모니터링 파일 목록 메모리 할당 해제
  * @param head 트리의 루트 노드
  */
@@ -494,7 +633,7 @@ void recovery(int signo) // SIGINT 시그널 처리
 		if(is_complete) // 동기화가 완료되었을 경우
 			return;
 
-		sprintf(command, "tar -xvf %.*s", (int)strlen(swap_path), swap_path); // 복원 명령어 생성(압축 해제)
+		sprintf(command, "tar -xvf %s.swp", get_file_name(dst_path)); // 복원 명령어 생성(압축 해제)
 #ifdef DEBUG
 		printf("recovery(): command = %s\n", command);
 #endif
@@ -502,7 +641,7 @@ void recovery(int signo) // SIGINT 시그널 처리
 		kill(getpid(), SIGUSR1); // 표준 입출력 닫기
 		system(command); // 복원 명령어 실행
 		kill(getpid(), SIGUSR2);
-		remove(swap_path); // swap 파일 삭제
+		remove(command + 9); // swap 파일 삭제
 	}
 	exit(1);
 }
@@ -554,4 +693,13 @@ char *get_file_name(char *path) // 파일명 추출
 			tmp = path + i;
 
 	return tmp + 1;
+}
+
+/**
+ * @brief 사용법 출력
+ * @param 실행파일 문자열
+ */
+void print_usage(char *execute_file) // 사용법 출력
+{
+	fprintf(stderr, "ssu_rsync(): Usage: %s [OPTION] <SOURCE> <DESTINATION>\n", execute_file);
 }

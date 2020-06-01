@@ -6,9 +6,12 @@
 #ifndef SSU_RSYNC_H
 #define SSU_RSYNC_H
 
+#include <fcntl.h>
 #include <dirent.h>
 #include <signal.h>
+#include <utime.h>
 #include <sys/stat.h>
+#include <sys/types.h>
 #include "common.h"
 
 /**
@@ -35,12 +38,7 @@ typedef struct ssu_fileNode{ // 모니터링 파일 목록 구조체
 	int status; // 모니터링 확인 상태
 } file_node;
 
-typedef struct ssu_changeItem {
-	char name[BUFFER_SIZE];
-	int status;
-	int size;
-} change_file;
-
+void copy_argument(int argc, char *argv[]); // 명령행 인자 백업
 void swap_handler(int signo); // 표준입출력 전환
 void syncronize(char *src_path, char *dst_path); // 동기화 함수
 file_node *make_node(void); // 노드 생성
@@ -49,8 +47,11 @@ int count_size(file_node *head); // 디렉토리 크기 반환
 void compare_list(file_node *src_list, file_node *dst_list); // 파일 목록 트리 비교
 bool compare_file(file_node *src_file, file_node *dst_file); // 파일 정보 비교
 int write_change_list(file_node *head, int idx, int status, bool is_first); // 변경사항 목록 작성
+void write_log(int count); // 로그 파일 작성
 void free_list(file_node *head); // 모니터링 파일 목록 메모리 할당 해제
+void renewal(int count); // 파일 동기화
 void recovery(int signo); // SIGINT 시그널 처리
 void remove_directory(const char *path); // 디렉토리 삭제
 char *get_file_name(char *path); // 파일명 추출
+void print_usage(char *execute_file); // 사용법 출력
 #endif // SSU_RSYNC_H
