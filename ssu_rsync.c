@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 	struct timeval begin_t, end_t;
 
 	// swap 생성
-	char swap_path[MAX_BUFFER_SIZE];
+	char swap_path[BUFFER_SIZE];
 	char command[MAX_BUFFER_SIZE];
 
 	// 유효 검사
@@ -364,7 +364,7 @@ bool compare_file(file_node *src_file, file_node *dst_file) // 파일 정보 비
 	while (now != NULL) {
 
 #ifdef DEBUG
-		printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", src_file->name + strlen(pwd) + 1, now->name + strlen(pwd) + 1);
+		printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", src_file->name + strlen(pwd) + 1, now->name + strlen(dst_path) + 1);
 #endif
 		if (!strcmp(src_file->name + strlen(pwd) + 1, now->name + strlen(dst_path) + 1)) { // 파일 이름이 같은 경우
 
@@ -430,7 +430,7 @@ int write_change_list(file_node *head, int idx, int status, bool is_first) // �
 					change_list[idx].status = CREATE;
 				} else if (status == DELETE) { // 삭제됨
 					char tmp[MAX_BUFFER_SIZE];
-					sprintf(tmp, "%s/%s", dst_path, get_file_name(src_path));
+					sprintf(tmp, "%.*s/%s", (int)strlen(dst_path), dst_path, get_file_name(src_path));
 					if(strstr(now->name, tmp) == NULL || !strcmp(now->name, tmp))
 						break;
 					strcpy(change_list[idx].name, now->name);
@@ -494,7 +494,7 @@ void recovery(int signo) // SIGINT 시그널 처리
 		if(is_complete) // 동기화가 완료되었을 경우
 			return;
 
-		sprintf(command, "tar -xvf %s", swap_path); // 복원 명령어 생성(압축 해제)
+		sprintf(command, "tar -xvf %.*s", (int)strlen(swap_path), swap_path); // 복원 명령어 생성(압축 해제)
 #ifdef DEBUG
 		printf("recovery(): command = %s\n", command);
 #endif
