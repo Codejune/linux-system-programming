@@ -6,6 +6,7 @@ ssu_rsync
 # Temporary files
 ssu_crontab_file
 ssu_crontab_log
+ssu_rsync_log
 .dependency
 *.sh
 *.txt
