@@ -561,7 +561,7 @@ void write_log(int count) // 로그 파일 작성
 	char command[MAX_BUFFER_SIZE];
 
 	if (count == 0) {
-		fprintf(stderr, "write_log(): up-to-date %s\n", dst_path);
+		fprintf(stderr, "write_log(): already up to date in %s\n", dst_path);
 		return;
 	}
 
