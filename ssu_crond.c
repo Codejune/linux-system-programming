@@ -127,7 +127,7 @@ void *reservation_execute(void *arg) // 예약 명령 실행 스레드
 #endif
 			sleep(execute_t - now_t); // 명령어 실행 대기
 #ifdef DEBUG
-			printf("reservation_execute(): %s, running at %s\n", (char*)arg, asctime(&now_tm));
+			printf("reservation_execute(): %s, running at %s", (char*)arg, asctime(&now_tm));
 #endif
 			system(command); // 명령어 실행
 			write_log(RUN, (char*)arg);

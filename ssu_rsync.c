@@ -5,6 +5,11 @@
  */
 #include "ssu_rsync.h"
 
+// 옵션
+bool option_r = false;
+bool option_t = false;
+bool option_m = false;
+
 /**
  * @brief ssu_rsync 메인 함수
  * @param argc 인자 개수
@@ -16,19 +21,15 @@ int main(int argc, char *argv[])
 	struct timeval begin_t, end_t;
 
 	// 파일 경로
-	char src_path[MAX_BUFFER_SIZE];
-	char dst_path[MAX_BUFFER_SIZE];
-
-	// 옵션
-	bool option_r = false;
-	bool option_t = false;
-	bool option_m = false;
+	char src_path[MAX_BUFFER_SIZE] = { 0 };
+	char dst_path[MAX_BUFFER_SIZE] = { 0 };
 
 	// 유효 검사
+	char opt;
+	struct stat statbuf;
 	bool is_invalid = false;
 	bool is_src = false;
 	bool is_dst = false;
-
 
 	gettimeofday(&begin_t, NULL); // 측정 시작
 
@@ -37,47 +38,86 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	for (int i = 0; i < argc; i++) {
+	for (int i = 1; i < argc; i++) {
+#ifdef DEBUG
+		printf("ssu_rsync(): argv[%d] = %s\n", i, argv[i]);
+#endif
+		// 옵션 생략
+		if (argv[i][0] == '-') 
+			continue;
 
-		// 옵션 파싱
-		if (argv[i][0] == '-') {
-			if (!strcmp(argv[i], "-r"))
-				option_r = true;
-			else if (!strcmp(argv[i], "-t"))
-				option_t = true;
-			else if (!strcmp(argv[i], "-m"))
-				option_m = true;
-			else {
+		// 타겟 경로 파싱
+		if (!is_src) {
+			if (access(argv[i], F_OK) < 0) {
+#ifdef DEBUG
+				fprintf(stderr, "ssu_rsync(): access error for %s\n", argv[i]);
+#endif
 				is_invalid = true;
 				break;
 			}
-			continue;
-		}
-
-		// 목적 경로 파싱
-		if (!is_src) {
-			if (access(argv[i], F_OK) < 0) {
-				fprintf(stderr, "ssu_rsync(): access error for %s\n", argv[i]);
-				is_invalid = true;
-				exit(1);
-			} else 
-				realpath(argv[i], src_path); // 절대 경로로 변환
-
+			
+			realpath(argv[i], src_path); // 절대 경로로 변환
+#ifdef DEBUG
+			printf("ssu_rsync(): src_path = %s\n", src_path);
+#endif
 			is_src = true;
 			continue;
 		}
 
-		// 위치 경로 파싱
+		// 동기화 경로 파싱
 		if (!is_dst) {
 			if (access(argv[i], F_OK) < 0) {
+#ifdef DEBUG
 				fprintf(stderr, "ssu_rsync(): access error for %s\n", argv[i]);
+#endif
 				is_invalid = true;
-				exit(1);
-			} else 
-				realpath(argv[i], dst_path); // 절대 경로로 변환
+				break;
+			}
 
+			realpath(argv[i], dst_path); // 절대 경로로 변환
+#ifdef DEBUG
+			printf("ssu_rsync(): dst_path = %s\n", dst_path);
+#endif
+			lstat(dst_path, &statbuf);
+			if (!S_ISDIR(statbuf.st_mode)) { // 동기화 경로가 디렉토리가 아닐 경우
+#ifdef DEBUG
+				fprintf(stderr, "ssu_rsync(): dst_path doesn't directory\n");
+#endif
+				is_invalid = true;
+				break;
+			}
 			is_dst = true;
 			continue;
+		}
+	}
+
+	// 옵션 파싱
+	while ((opt = getopt(argc, argv, "rtm")) != -1) {
+		switch (opt) {
+			case 'r':
+#ifdef DEBUG
+				printf("ssu_rsync(): R option found\n");
+#endif
+				option_r = true;
+				break;
+			case 't':
+#ifdef DEBUG
+				printf("ssu_rsync(): T option found\n");
+#endif
+				option_t = true;
+				break;
+			case 'm':
+#ifdef DEBUG
+				printf("ssu_rsync(): M option found\n");
+#endif
+				option_m = true;
+				break;
+			default:
+#ifdef DEBUG
+				printf("ssu_rsync(): invalid option found\n");
+#endif
+				is_invalid = true;
+				break;
 		}
 	}
 
@@ -91,10 +131,32 @@ int main(int argc, char *argv[])
 		fprintf(stderr, "ssu_rsync(): <DESTINATION> doesn't exist\n");
 		exit(1);
 	}
-	
+
+	syncronized(src_path, dst_path);
+
 	gettimeofday(&end_t, NULL); // 측정 종료
 	ssu_runtime(&begin_t, &end_t); // 실행 시간 출력
 	exit(0);
+}
+
+/**
+ * @brief 동기화 함수
+ * @param src_path 타겟 경로
+ * @param dst_path 동기화 경로
+ */
+void syncronized(char *src_path, char *dst_path) // 동기화 함수
+{
+	file_node *src_list; // 타겟 경로 파일 목록
+	file_node *dst_list; // 동기화 경로 파일 목록
+	
+	src_list = make_list(src_path); 
+	dst_list = make_list(dst_path);
+	
+	compare_list(src_list, dst_list->child); // 파일 목록 트리 비교
+
+	free_list(src_list);
+	free_list(dst_list);
+
 }
 
 /**
@@ -189,6 +251,88 @@ int count_size(file_node *head) // 디렉토리 크기 반환
 	}
 
 	return size;
+}
+
+/**
+ * @brief 파일 목록 트리 비교 
+ * @param src_list 타겟 파일 목록
+ * @param dst_list 동기화 디렉토리 파일 목록 
+ */
+void compare_list(file_node *src_list, file_node *dst_list) // 파일 목록 트리 비교
+{
+	file_node *now;
+
+	if (src_list == NULL || dst_list == NULL) // 둘중 하나라도 비교 대상이 존재하지 않을 경우
+		return;
+
+	now = src_list;
+
+	while (now != NULL) { // 타겟 파일 탐색
+
+		compare_file(now, dst_list);
+
+		if (option_r) // R 옵션이 존재하는 경우
+			if (now->child != NULL)
+				compare_list(now->child, dst_list);
+
+		now = now->next;
+	}
+}
+
+/**
+ * @brief 파일 정보 비교
+ * @param src_file 타겟 파일 노드
+ * @param dst_file 동기화 디렉토리 파일 노드
+ */
+int compare_file(file_node *src_file, file_node *dst_file) // 파일 정보 비교
+{
+	file_node *now;
+
+	now = dst_file;
+
+	while (now != NULL) {
+
+#ifdef DEBUG
+			printf("compare_file(): src_file->name = %s, now->name = %s\n", src_file->name, now->name);
+#endif
+		if (!strcmp(src_file->name, now->name)) { // 해당 이름을 가진 파일이 기존에 이미 존재할 경우
+
+#ifdef DEBUG
+				printf("compare_file(): founded\n");
+#endif
+			src_file->status = CHCKED;
+
+			if (src_file->attr.st_mtime != now->attr.st_mtime) { // 해당 파일이 수정되었을 경우
+#ifdef DEBUG
+				printf("compare_file(): mtime different\n");
+#endif
+				src_file->status = MODIFY; // 타겟 파일의 상태 변경
+			}
+
+			if (src_file->size != now->size) { // 해당 파일의 크기가 변경되었을 경우
+
+#ifdef DEBUG
+				printf("compare_file(): size different\n");
+#endif
+				src_file->status = MODIFY;
+			}
+
+			now->status = CHCKED;
+#ifdef DEBUG
+			printf("compare_file(): src_file->status = %d, now->status = %d\n", src_file->status, now->status);
+#endif
+			return true;
+		}
+
+		if(option_r)
+			if(now->child != NULL) // 디렉토리 안에 파일이 존재할 경우
+				if(compare_file(src_file, now->child)) 
+					break;
+
+		now = now->next;
+	}
+
+	return false;
 }
 
 /**

@@ -100,7 +100,7 @@ void prompt(void) // 프롬프트 메인
 			case REMOVE: 
 
 				if (command.argc < 2) {
-					print_usage();
+					fprintf(stderr, "prompt: COMMAND_NUMBER doesn't exist\n");
 					break;
 				}
 
