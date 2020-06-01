@@ -6,7 +6,7 @@
 #include "cron_support.h"
 
 FILE *fp;
-pthread_mutex_t mutex; // 뮤텍스 객체 선언
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER; // 뮤텍스 객체 선언
 extern char reservation_command[BUFFER_SIZE][MAX_BUFFER_SIZE]; // 예약 명령 목록
 
 /**
@@ -90,11 +90,10 @@ void write_log(int command_type, char *command) // 로그 파일에 이력 기�
 	struct tm *now_tm;
 
 	pthread_mutex_lock(&mutex);
+
 	if ((fp = fopen(CRONTAB_LOG, "r+")) == NULL)
-	{
-		fprintf(stderr, "write_log: fopen error for %s\n", CRONTAB_LOG);
-		return;
-	}
+		fp = fopen(CRONTAB_LOG, "w");
+
 	fseek(fp, 0, SEEK_END);
 
 	time(&now_t);
@@ -114,8 +113,6 @@ void write_log(int command_type, char *command) // 로그 파일에 이력 기�
 			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "run", command);
 			break;
 	}
-	//system(temp);
-	//fflush(fp);
 	fclose(fp);
 	pthread_mutex_unlock(&mutex);
 }
