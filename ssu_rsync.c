@@ -25,6 +25,7 @@ int err_fd; // 표준 에러
 file_node change_list[BUFFER_SIZE]; // 변경 목록
 char **saved_argv;
 int saved_argc;
+bool src_is_dir = false;
 
 
 /**
@@ -56,8 +57,8 @@ int main(int argc, char *argv[])
 	}
 
 	getcwd(pwd, MAX_BUFFER_SIZE);
-	signal(SIGUSR1, swap_handler);
-	signal(SIGUSR2, swap_handler);
+	signal(SIGUSR1, io_handler);
+	signal(SIGUSR2, io_handler);
 
 	copy_argument(argc, argv);
 
@@ -82,6 +83,12 @@ int main(int argc, char *argv[])
 			realpath(argv[i], src_path); // 절대 경로로 변환
 #ifdef DEBUG
 			printf("ssu_rsync(): src_path = %s\n", src_path);
+#endif
+			lstat(src_path, &statbuf); 
+			if (S_ISDIR(statbuf.st_mode))
+				src_is_dir = true;
+#ifdef DEBUG
+				fprintf(stderr, "ssu_rsync(): dst_path doesn't directory\n");
 #endif
 			is_src = true;
 			continue;
@@ -150,20 +157,21 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	sprintf(swap_path, "%s.swp", get_file_name(dst_path)); // swap 파일 경로 생성
-	sprintf(command, "tar -cvf %s %s", swap_path, get_file_name(dst_path)); // 명령어 생성
+	strncpy(swap_path, dst_path, strlen(dst_path) - strlen(get_file_name(dst_path)));
 #ifdef DEBUG
-	printf("ssu_rsync(): swap_path = %s\n", swap_path);
+	printf("ssu_rsync(): cd %s\n", swap_path);
+#endif
+	chdir(swap_path);
+	sprintf(command, "tar -cvf %s.swp %s", get_file_name(dst_path), get_file_name(dst_path)); // 명령어 생성
+#ifdef DEBUG
 	printf("ssu_rsync(): command = %s\n", command);
 #endif
 	kill(getpid(), SIGUSR1); // 표준 입출력 닫음
 	system(command); // 명령어 실행(압축)
 	kill(getpid(), SIGUSR2); // 표준 입출력 열기
-
+	chdir(pwd); // 실행 경로로 복귀
 	signal(SIGINT, recovery); // SIGINT 시그널 처리
-
 	syncronize(src_path, dst_path); // 동기화
-
 	remove(swap_path); // swap 파일 삭제
 
 	gettimeofday(&end_t, NULL); // 측정 종료
@@ -190,7 +198,7 @@ void copy_argument(int argc, char *argv[]) // 명령행 인자 백업
  * @brief 표준 입출력 전환
  * @param signo 시그널 
  */
-void swap_handler(int signo) // 표준 입출력 전환
+void io_handler(int signo) // 표준 입출력 전환
 { 
 	switch (signo) {
 		case SIGUSR1:
@@ -497,6 +505,12 @@ void renewal(int count) // 파일 동기화
 	struct utimbuf attr;
 	size_t length;
 
+	sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, get_file_name(src_path));
+	if (src_is_dir && access(path, F_OK) < 0) {
+		lstat(src_path, &statbuf);
+		mkdir(path, statbuf.st_mode);
+	}
+
 	for (int i = 0; i < count; i++) {
 
 		switch (change_list[i].status) {
@@ -545,7 +559,6 @@ void renewal(int count) // 파일 동기화
 				break;
 		}
 	}
-
 	write_log(count);
 }
 
@@ -596,7 +609,10 @@ void write_log(int count) // 로그 파일 작성
 				break;
 			case CREATE:
 			case MODIFY:
-				fprintf(fp, "        %s %dbytes\n",  change_list[i].name + strlen(src_path) + 1, change_list[i].size);
+				if (src_is_dir) 
+					fprintf(fp, "        %s %dbytes\n", change_list[i].name + strlen(src_path) + 1, change_list[i].size);
+				else
+					fprintf(fp, "        %s %dbytes\n", change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path)), change_list[i].size);
 				break;
 		}
 }
@@ -625,6 +641,7 @@ void free_list(file_node *head) // 모니터링 파일 목록 메모리 할당 �
 void recovery(int signo) // SIGINT 시그널 처리
 {
 	char command[MAX_BUFFER_SIZE];
+	char path[MAX_BUFFER_SIZE];
 
 	if(signo == SIGINT) { // SIGINT 시그널 획득 시
 #ifdef DEBUG
@@ -632,6 +649,12 @@ void recovery(int signo) // SIGINT 시그널 처리
 #endif
 		if(is_complete) // 동기화가 완료되었을 경우
 			return;
+		
+		strncpy(path, dst_path, strlen(dst_path) - strlen(get_file_name(dst_path)));
+#ifdef DEBUG
+		printf("recovery(): cd %s\n", path);
+#endif
+		chdir(path);
 
 		sprintf(command, "tar -xvf %s.swp", get_file_name(dst_path)); // 복원 명령어 생성(압축 해제)
 #ifdef DEBUG
@@ -642,6 +665,7 @@ void recovery(int signo) // SIGINT 시그널 처리
 		system(command); // 복원 명령어 실행
 		kill(getpid(), SIGUSR2);
 		remove(command + 9); // swap 파일 삭제
+
 	}
 	exit(1);
 }
