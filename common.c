@@ -15,5 +15,5 @@ void ssu_runtime(struct timeval *begin_t, struct timeval *end_t) // 실행 시�
 	}
 
 	end_t->tv_usec -= begin_t->tv_usec;
-	printf("Runtime: %ld:%06ld(sec:usec)\n", end_t->tv_sec, end_t->tv_usec);
+	printf("Runtime: %ld:%ld(sec:usec)\n", end_t->tv_sec, end_t->tv_usec);
 }
