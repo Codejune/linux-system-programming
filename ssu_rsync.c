@@ -22,7 +22,7 @@ int in_fd; // 표준 입력
 int out_fd; // 표준 출력
 int err_fd; // 표준 에러
 
-file_node change_list[BUFFER_SIZE]; // 변경 목록
+file_node change_list[MAX_BUFFER_SIZE]; // 변경 목록
 char **saved_argv;
 int saved_argc;
 bool src_is_dir = false;
@@ -394,9 +394,9 @@ bool compare_file(file_node *src_file, file_node *dst_file) // 파일 정보 비
 	while (now != NULL) {
 
 #ifdef DEBUG
-		printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", src_file->name + strlen(pwd) + 1, now->name + strlen(dst_path) + 1);
+		printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", src_file->name + strlen(src_path) - strlen(get_file_name(src_path)), now->name + strlen(dst_path) + 1);
 #endif
-		if (!strcmp(src_file->name + strlen(pwd) + 1, now->name + strlen(dst_path) + 1)) { // 파일 이름이 같은 경우
+		if (!strcmp(src_file->name + strlen(src_path) - strlen(get_file_name(src_path)), now->name + strlen(dst_path) + 1)) { // 파일 이름이 같은 경우
 
 #ifdef DEBUG
 			printf("compare_file(): file found\n");
@@ -482,7 +482,7 @@ int write_change_list(file_node *head, int idx, int status, bool is_first) // �
 				break;
 		}
 
-		if(option_r || is_first)
+		if(option_r || is_first) // R옵션이 존재하거나 첫번째 레벨일 경우
 			if (now->child != NULL)
 				idx = write_change_list(now->child, idx, status, false);
 
@@ -505,7 +505,8 @@ void renewal(int count) // 파일 동기화
 	struct utimbuf attr;
 	size_t length;
 
-	sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, get_file_name(src_path));
+	// 타겟 디렉토리가 존재하지 않을경우 동기화 디렉토리에 생성
+	sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, get_file_name(src_path)); 
 	if (src_is_dir && access(path, F_OK) < 0) {
 		lstat(src_path, &statbuf);
 		mkdir(path, statbuf.st_mode);
@@ -529,7 +530,10 @@ void renewal(int count) // 파일 동기화
 				memset(path, 0, MAX_BUFFER_SIZE);
 
 				lstat(change_list[i].name, &statbuf);
-				sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(pwd) + 1); // 동기화 파일 경로 생성
+				sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path))); // 동기화 파일 경로 생성
+#ifdef DEBUG
+				printf("renewal: path = %s\n", path);
+#endif
 
 				if (S_ISDIR(statbuf.st_mode)) 
 					mkdir(path, 0755);
