@@ -552,7 +552,7 @@ void renewal_tar(int count)
 	char path[MAX_BUFFER_SIZE] = { 0 }; 
 	char command[MAX_BUFFER_SIZE] = { 0 };
 	struct stat statbuf;
-	int size;
+	unsigned long long size;
 
 	if (count == 0) {
 		fprintf(stderr, "write_log(): already up to date in %s\n", dst_path);
@@ -629,7 +629,7 @@ void renewal_tar(int count)
  * @brief 로그 파일 작성
  * @param count 변경 사항 개수
  */
-void write_log(int count, int totalsize) // 로그 파일 작성
+void write_log(int count, unsigned long long totalsize) // 로그 파일 작성
 {
 	FILE *fp;
 	time_t now_t;
@@ -664,7 +664,7 @@ void write_log(int count, int totalsize) // 로그 파일 작성
 	fprintf(fp, "[%.24s] %s\n", asctime(now_tm), command); // 헤더 라인 쓰기
 
 	if (option_t)
-		fprintf(fp, "       totalsize %dbytes\n", totalsize);
+		fprintf(fp, "        totalsize %llubytes\n", totalsize);
 
 	for (int i = 0; i < count; i++) // 변경 사항 쓰기
 		switch (change_list[i].status) {
