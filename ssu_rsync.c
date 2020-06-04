@@ -17,11 +17,6 @@ bool option_t = false; // T 옵션
 bool option_m = false; // M 옵션
 bool is_complete = false; // 동기화 완료 확인
 
-// 디스크럽터
-int in_fd; // 표준 입력
-int out_fd; // 표준 출력
-int err_fd; // 표준 에러
-
 file_node change_list[MAX_BUFFER_SIZE]; // 변경 목록
 char **saved_argv;
 int saved_argc;
@@ -57,9 +52,6 @@ int main(int argc, char *argv[])
 	}
 
 	getcwd(pwd, MAX_BUFFER_SIZE);
-	signal(SIGUSR1, io_handler);
-	signal(SIGUSR2, io_handler);
-
 	copy_argument(argc, argv);
 
 	for (int i = 1; i < argc; i++) {
@@ -88,7 +80,7 @@ int main(int argc, char *argv[])
 			if (S_ISDIR(statbuf.st_mode))
 				src_is_dir = true;
 #ifdef DEBUG
-				fprintf(stderr, "ssu_rsync(): dst_path doesn't directory\n");
+			fprintf(stderr, "ssu_rsync(): dst_path doesn't directory\n");
 #endif
 			is_src = true;
 			continue;
@@ -161,14 +153,17 @@ int main(int argc, char *argv[])
 #ifdef DEBUG
 	printf("ssu_rsync(): cd %s\n", swap_path);
 #endif
+
 	chdir(swap_path);
-	sprintf(command, "tar -cvf %s.swp %s", get_file_name(dst_path), get_file_name(dst_path)); // 명령어 생성
+
 #ifdef DEBUG
+	sprintf(command, "tar -cvf %s.swp %s", get_file_name(dst_path), get_file_name(dst_path)); // 명령어 생성
 	printf("ssu_rsync(): command = %s\n", command);
+#else
+	sprintf(command, "tar -cf %s.swp %s", get_file_name(dst_path), get_file_name(dst_path)); // 명령어 생성
 #endif
-	kill(getpid(), SIGUSR1); // 표준 입출력 닫음
+
 	system(command); // 명령어 실행(압축)
-	kill(getpid(), SIGUSR2); // 표준 입출력 열기
 	chdir(pwd); // 실행 경로로 복귀
 	signal(SIGINT, recovery); // SIGINT 시그널 처리
 	syncronize(src_path, dst_path); // 동기화
@@ -195,29 +190,6 @@ void copy_argument(int argc, char *argv[]) // 명령행 인자 백업
 	for(int i = 0; i < saved_argc; i++) {
 		saved_argv[i] = calloc(MAX_BUFFER_SIZE, sizeof(char));
 		strcpy(saved_argv[i], argv[i]);
-	}
-}
-
-/**
- * @brief 표준 입출력 전환
- * @param signo 시그널 
- */
-void io_handler(int signo) // 표준 입출력 전환
-{ 
-	switch (signo) {
-		case SIGUSR1:
-			in_fd = dup(0);
-			out_fd = dup(1);
-			err_fd = dup(2);
-			close(0);
-			close(1);
-			close(2);
-			break;
-		case SIGUSR2:
-			dup2(in_fd, 0);
-			dup2(out_fd, 1);
-			dup2(err_fd, 2);
-			break;
 	}
 }
 
@@ -250,10 +222,10 @@ void syncronize(char *src_path, char *dst_path) // 동기화 함수
 	if (option_m) 
 		change_count = write_change_list(dst_list->child, change_count, DELETE, true); // 삭제 혹은 수정된 파일 확인
 
-	//if (option_t)
-	//	refresh_tar(change_count);
-	//else
-	renewal(change_count);
+	if (option_t)
+		renewal_tar(change_count);
+	else
+		renewal(change_count);
 
 	free_list(src_list);
 	free_list(dst_list);
@@ -567,14 +539,97 @@ void renewal(int count) // 파일 동기화
 				break;
 		}
 	}
-	write_log(count);
+	write_log(count, 0);
+}
+
+/**
+ * @brief tar 동기화
+ * @param count 변경 사항 개수
+ */
+void renewal_tar(int count) 
+{
+	char file_name[BUFFER_SIZE] = { 0 };
+	char path[MAX_BUFFER_SIZE] = { 0 }; 
+	char command[MAX_BUFFER_SIZE] = { 0 };
+	struct stat statbuf;
+	int size;
+
+	if (count == 0) {
+		fprintf(stderr, "write_log(): already up to date in %s\n", dst_path);
+		return;
+	}
+
+	// 1. 타겟 디렉토리 tar 생성
+	strncpy(path, src_path, get_file_name(src_path) - src_path - 1); 
+	sprintf(file_name, "%s.tar", get_file_name(src_path));
+#ifdef DEBUG
+	printf("renewal_tar(): cd %s\n", path);
+#endif
+	chdir(path);
+
+	// 2. 압축 실행
+	for(int i = 0; i < count; i++) {
+		switch (change_list[i].status) {
+			case DELETE:
+
+				lstat(change_list[i].name, &statbuf);
+				if (S_ISDIR(statbuf.st_mode))
+					remove_directory(change_list[i].name);
+				else
+					remove(change_list[i].name);
+				break;
+
+			case CREATE:
+			case MODIFY:
+
+				// 압축 파일에 파일 추가
+				if (src_is_dir)
+#ifdef DEBUG
+					sprintf(command, "tar -rvf %s %s", file_name, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path))); 
+#else
+					sprintf(command, "tar -rf %s %s", file_name, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path)));
+#endif				
+				else 
+#ifdef DEBUG
+					sprintf(command, "tar -rvf %s %s", file_name, get_file_name(src_path));
+#else
+					sprintf(command, "tar -rf %s %s", file_name, get_file_name(src_path));
+#endif
+#ifdef DEBUG
+				printf("renewal_tar(): command = %s\n", command);
+#endif
+				system(command); // 압축 실행
+				break;
+		}
+	}
+
+	chdir(path);
+	lstat(file_name, &statbuf); // 상태 정보 획득
+	size = statbuf.st_size; // 압축 파일 크기 획득
+	sprintf(path, "%s/%s", dst_path, file_name); // 압축 풀 경로 생성
+	rename(file_name, path); // 압축 파일 이동
+#ifdef DEBUG
+	printf("renewal_tar(): cd %s\n", dst_path);
+#endif
+	chdir(dst_path);
+#ifdef DEBUG
+	sprintf(command, "tar -xvf %s", file_name);
+	printf("renewal_tar(): command = %s\n", command);
+#else
+	sprintf(command, "tar -xf %s", file_name);
+#endif
+	system(command);
+	unlink(file_name);
+	chdir(pwd);
+
+	write_log(count, size);
 }
 
 /**
  * @brief 로그 파일 작성
- * @param 변경 사항 개수
+ * @param count 변경 사항 개수
  */
-void write_log(int count) // 로그 파일 작성
+void write_log(int count, int totalsize) // 로그 파일 작성
 {
 	FILE *fp;
 	time_t now_t;
@@ -608,7 +663,8 @@ void write_log(int count) // 로그 파일 작성
 
 	fprintf(fp, "[%.24s] %s\n", asctime(now_tm), command); // 헤더 라인 쓰기
 
-	//if(option_p)
+	if (option_t)
+		fprintf(fp, "       totalsize %dbytes\n", totalsize);
 
 	for (int i = 0; i < count; i++) // 변경 사항 쓰기
 		switch (change_list[i].status) {
@@ -618,9 +674,15 @@ void write_log(int count) // 로그 파일 작성
 			case CREATE:
 			case MODIFY:
 				if (src_is_dir) 
-					fprintf(fp, "        %s %dbytes\n", change_list[i].name + strlen(src_path) + 1, change_list[i].size);
+					if (option_t)
+						fprintf(fp, "        %s\n", change_list[i].name + strlen(src_path) + 1);
+					else
+						fprintf(fp, "        %s %dbytes\n", change_list[i].name + strlen(src_path) + 1, change_list[i].size);
 				else
-					fprintf(fp, "        %s %dbytes\n", change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path)), change_list[i].size);
+					if (option_t)
+						fprintf(fp, "        %s\n", change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path)));
+					else
+						fprintf(fp, "        %s %dbytes\n", change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path)), change_list[i].size);
 				break;
 		}
 }
@@ -657,22 +719,22 @@ void recovery(int signo) // SIGINT 시그널 처리
 #endif
 		if(is_complete) // 동기화가 완료되었을 경우
 			return;
-		
-		strncpy(path, dst_path, strlen(dst_path) - strlen(get_file_name(dst_path)));
+
+		strncpy(path, dst_path, get_file_name(dst_path) - dst_path);
 #ifdef DEBUG
 		printf("recovery(): cd %s\n", path);
 #endif
 		chdir(path);
 
-		sprintf(command, "tar -xvf %s.swp", get_file_name(dst_path)); // 복원 명령어 생성(압축 해제)
 #ifdef DEBUG
+		sprintf(command, "tar -xvf %s.swp", get_file_name(dst_path)); // 복원 명령어 생성(압축 해제)
 		printf("recovery(): command = %s\n", command);
+#else
+		sprintf(command, "tar -xf %s.swp", get_file_name(dst_path)); // 복원 명령어 생성(압축 해제)
 #endif
 		remove_directory(dst_path); // 기존 동기화 디렉토리 삭제
-		kill(getpid(), SIGUSR1); // 표준 입출력 닫기
 		system(command); // 복원 명령어 실행
-		kill(getpid(), SIGUSR2);
-		remove(command + 9); // swap 파일 삭제
+		unlink(command + 9); // swap 파일 삭제
 
 	}
 	exit(1);
