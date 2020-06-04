@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
 		exit(1);
 	}
 
-	strncpy(swap_path, dst_path, strlen(dst_path) - strlen(get_file_name(dst_path)));
+	strncpy(swap_path, dst_path, get_file_name(dst_path) - dst_path);
 #ifdef DEBUG
 	printf("ssu_rsync(): cd %s\n", swap_path);
 #endif
@@ -172,7 +172,11 @@ int main(int argc, char *argv[])
 	chdir(pwd); // 실행 경로로 복귀
 	signal(SIGINT, recovery); // SIGINT 시그널 처리
 	syncronize(src_path, dst_path); // 동기화
-	remove(swap_path); // swap 파일 삭제
+	sprintf(swap_path, "%s.swp", dst_path);
+#ifdef DEBUG
+	printf("ssu_rsync(): swap_path = %s\n", swap_path);
+#endif
+	unlink(swap_path); // swap 파일 삭제
 
 	gettimeofday(&end_t, NULL); // 측정 종료
 	ssu_runtime(&begin_t, &end_t); // 실행 시간 출력
