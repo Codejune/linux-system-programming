@@ -167,7 +167,7 @@ int main(int argc, char *argv[])
 	chdir(pwd); // 실행 경로로 복귀
 	signal(SIGINT, recovery); // SIGINT 시그널 처리
 	syncronize(src_path, dst_path); // 동기화
-	sprintf(swap_path, "%s.swp", dst_path);
+	sprintf(swap_path, "%.*s.swp", (int)strlen(dst_path), dst_path);
 #ifdef DEBUG
 	printf("ssu_rsync(): swap_path = %s\n", swap_path);
 #endif
@@ -606,7 +606,7 @@ void renewal_tar(int count)
 	chdir(path);
 	lstat(file_name, &statbuf); // 상태 정보 획득
 	size = statbuf.st_size; // 압축 파일 크기 획득
-	sprintf(path, "%s/%s", dst_path, file_name); // 압축 풀 경로 생성
+	sprintf(path, "%.*s/%.*s", (int)strlen(dst_path), dst_path, (int)strlen(file_name), file_name); // 압축 풀 경로 생성
 	rename(file_name, path); // 압축 파일 이동
 #ifdef DEBUG
 	printf("renewal_tar(): cd %s\n", dst_path);
