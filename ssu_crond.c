@@ -193,7 +193,10 @@ void set_reservation_time_table(char *period, int period_type, bool *reservation
 		memset(target, 0, BUFFER_SIZE);
 		memset(unit, 0, BUFFER_SIZE);
 
-		sscanf(period_token[i], "%[^/(-)]%c%s", target, &operator, unit); // 슬래시(/) 우선 토큰 분리
+		if (strchr(period_token[i], '-') && strchr(period_token[i], '/')) // 슬래시와 범위가 둘다 포함되는 경우
+			sscanf(period_token[i], "%[^/]%c%s", target, &operator, unit);
+		else // 둘중 하나만 포함되는 경우
+			sscanf(period_token[i], "%[^-/]%c%s", target, &operator, unit);
 #ifdef DEBUG
 		printf("set_reservation_time_table: target = %s, operator = %c, unit = %s\n", target, operator, unit);
 #endif
