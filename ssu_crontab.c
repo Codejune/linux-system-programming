@@ -266,7 +266,7 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 		strcpy(period_token[period_token_count++], tmp);
 	}
 #else
-		strcpy(period_token[period_token_count++], tmp);
+	strcpy(period_token[period_token_count++], tmp);
 #endif
 
 	// 2. 슬래쉬(/), 바(-) 분리
@@ -485,6 +485,42 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 						return false;
 					break;
 			}
+		}
+	} else {
+		if(strchr(target, '*') && strlen(target) != 1)
+			return false;
+		
+		if(strchr(target, '*') == NULL)
+		switch (period_type) {
+			case MINUTE:
+
+				if (atoi(target) < 0 || atoi(target) > 59) // 앞의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case HOUR:
+
+				if (atoi(target) < 0 || atoi(target) > 23) // 앞의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case DAY:
+
+				if (atoi(target) < 1 || atoi(target) > 31) // 앞의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case MONTH:
+
+				if (atoi(target) < 1 || atoi(target) > 12) // 앞의 수가 범위를 초과할 경우
+					return false;
+				break;
+
+			case DAY_OF_WEEK:
+
+				if (atoi(target) < 0 || atoi(target) > 6) // 앞의 수가 범위를 초과할 경우
+					return false;
+				break;
 		}
 	}
 	return true;
