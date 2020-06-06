@@ -274,7 +274,10 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 		operator = 0;
 		memset(target, 0, BUFFER_SIZE);
 		memset(unit, 0, BUFFER_SIZE);
-		sscanf(period_token[i], "%[^/(-)]%c%s", target, &operator, unit); // 슬래시 우선 토큰 분리
+		if (strchr(period_token[i], '-') && strchr(period_token[i], '/')) // 슬래시와 범위가 둘다 포함되는 경우
+			sscanf(period_token[i], "%[^/]%c%s", target, &operator, unit);
+		else // 둘중 하나만 포함되는 경우
+			sscanf(period_token[i], "%[^-/]%c%s", target, &operator, unit);
 #ifdef DEBUG
 		printf("is_period(): target = %s, operator = %c, unit = %s\n", target, operator, unit);
 #endif
@@ -291,8 +294,8 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 		if (strchr(target, '*') != NULL || strchr(unit, '*') != NULL) 
 			return false;
 
-		// 3-3. 뒤의 수가 앞의 수보다 클 경우
-		if (atoi(target) < atoi(unit)) 
+		// 3-3. 앞의 수가 뒤의 수보다 클 경우
+		if (atoi(target) > atoi(unit)) 
 			return false;
 
 		// 3-4 허용 범위를 초과했을 경우
@@ -344,8 +347,8 @@ bool is_period(char *period, int period_type) // 주기 인자 검사
 		if (strchr(unit, '/') != NULL || strchr(unit, '-') != NULL) 
 			return false;
 
-		// 4-2. 시작, 끝의 범위가 전체(*)로 끝날 경우
-		if ((strchr(target, '*') != NULL && strlen(unit) != 1) || strchr(unit, '*') != NULL) 
+		// 4-2. 끝의 범위가 전체(*)로 끝날 경우
+		if (strchr(unit, '*') != NULL) 
 			return false;
 
 		// 4-3. 앞 토큰이 범위일 경우 
