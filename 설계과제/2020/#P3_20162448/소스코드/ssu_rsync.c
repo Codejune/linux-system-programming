@@ -508,9 +508,9 @@ void renewal(int count) // 파일 동기화
 
 				lstat(change_list[i].name, &statbuf);
 				if (src_is_dir)
-					sprintf(path, "%s/%s", dst_path, change_list[i].name + strlen(src_path) + 1); // 동기화된 파일 경로 생성
+					sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(src_path) + 1); // 동기화된 파일 경로 생성
 				else
-					sprintf(path, "%s/%s", dst_path, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path))); // 동기화된 파일 경로 생성
+					sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path))); // 동기화된 파일 경로 생성
 #ifdef DEBUG
 				printf("renewal: path = %s\n", path);
 #endif
@@ -615,7 +615,7 @@ void renewal_tar(int count)
 	size = statbuf.st_size; // 압축 파일 크기 획득
 
 	// DST 내부로 tar 파일 이동
-	sprintf(path, "%s/%.*s", dst_path, (int)strlen(file_name), file_name); // 이동 시킬 경로 생성
+	sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, file_name); // 이동 시킬 경로 생성
 #ifdef DEBUG
 	printf("renewal_tar(): mv %s %s\n", file_name, path);
 #endif
