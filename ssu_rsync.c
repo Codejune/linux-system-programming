@@ -488,6 +488,7 @@ void renewal(int count) // 파일 동기화
 	struct utimbuf attr;
 	size_t length;
 
+
 	for (int i = 0; i < count; i++) {
 
 		switch (change_list[i].status) {
@@ -506,7 +507,10 @@ void renewal(int count) // 파일 동기화
 				memset(path, 0, MAX_BUFFER_SIZE);
 
 				lstat(change_list[i].name, &statbuf);
-				sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(src_path) + 1); // 동기화 파일 경로 생성
+				if (src_is_dir)
+					sprintf(path, "%s/%s", dst_path, change_list[i].name + strlen(src_path) + 1); // 동기화된 파일 경로 생성
+				else
+					sprintf(path, "%s/%s", dst_path, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path))); // 동기화된 파일 경로 생성
 #ifdef DEBUG
 				printf("renewal: path = %s\n", path);
 #endif
@@ -721,8 +725,9 @@ void free_list(file_node *head) // 모니터링 파일 목록 메모리 할당 �
  */
 void recovery(int signo) // SIGINT 시그널 처리
 {
-	char command[MAX_BUFFER_SIZE];
-	char path[MAX_BUFFER_SIZE];
+	char file_name[BUFFER_SIZE] = { 0 };
+	char command[MAX_BUFFER_SIZE] = { 0 };
+	char path[MAX_BUFFER_SIZE] = { 0 };
 
 	if(signo == SIGINT) { // SIGINT 시그널 획득 시
 #ifdef DEBUG
@@ -737,15 +742,16 @@ void recovery(int signo) // SIGINT 시그널 처리
 #endif
 		chdir(path);
 
+		sprintf(file_name, "%s.swp", get_file_name(dst_path));
 #ifdef DEBUG
-		sprintf(command, "tar -xvf %s.swp", get_file_name(dst_path)); // 복원 명령어 생성(압축 해제)
+		sprintf(command, "tar -xvf %s", file_name); // 복원 명령어 생성(압축 해제)
 		printf("recovery(): command = %s\n", command);
 #else
-		sprintf(command, "tar -xf %s.swp", get_file_name(dst_path)); // 복원 명령어 생성(압축 해제)
+		sprintf(command, "tar -xf %s", file_name); // 복원 명령어 생성(압축 해제)
 #endif
 		remove_directory(dst_path); // 기존 동기화 디렉토리 삭제
 		system(command); // 복원 명령어 실행
-		unlink(command + 9); // swap 파일 삭제
+		unlink(file_name); // swap 파일 삭제
 
 	}
 	exit(1);
