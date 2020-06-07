@@ -45,7 +45,7 @@ file_node *make_list(char *path); // 디렉토리 파일 목록 트리화
 int count_size(file_node *head); // 디렉토리 크기 반환
 void compare_list(file_node *src_list, file_node *dst_list); // 파일 목록 트리 비교
 bool compare_file(file_node *src_file, file_node *dst_file); // 파일 정보 비교
-int write_change_list(file_node *head, int idx, int status, bool is_first); // 변경사항 목록 작성
+int write_change_list(file_node *head, int idx, int status); // 변경사항 목록 작성
 void write_log(int count, unsigned long long totalsize); // 로그 파일 작성
 void free_list(file_node *head); // 파일 목록 메모리 할당 해제
 void renewal(int count); // 파일 동기화

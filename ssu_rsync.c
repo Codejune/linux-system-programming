@@ -215,12 +215,12 @@ void syncronize(char *src_path, char *dst_path) // 동기화 함수
 		compare_file(src_list, dst_list->child);
 
 	if (is_directory)
-		change_count = write_change_list(src_list->child, change_count, CREATE, true); // 생성 혹은 수정된 파일 확인
+		change_count = write_change_list(src_list->child, change_count, CREATE); // 생성 혹은 수정된 파일 확인
 	else 
-		change_count = write_change_list(src_list, change_count, CREATE, true); // 생성 혹은 수정된 파일 확인
+		change_count = write_change_list(src_list, change_count, CREATE); // 생성 혹은 수정된 파일 확인
 
 	if (option_m) 
-		change_count = write_change_list(dst_list->child, change_count, DELETE, true); // 삭제 혹은 수정된 파일 확인
+		change_count = write_change_list(dst_list->child, change_count, DELETE); // 삭제 혹은 수정된 파일 확인
 
 	if (option_t)
 		renewal_tar(change_count);
@@ -370,9 +370,13 @@ bool compare_file(file_node *src_file, file_node *dst_file) // 파일 정보 비
 	while (now != NULL) {
 
 #ifdef DEBUG
-		printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", src_file->name + strlen(src_path) - strlen(get_file_name(src_path)), now->name + strlen(dst_path) + 1);
+		if (src_is_dir)
+			printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", src_file->name + strlen(src_path) + 1, now->name + strlen(dst_path) + 1);
+		else
+			printf("compare_file(): src_file->name = %s, dst_file->name = %s\n", get_file_name(src_file->name), now->name + strlen(dst_path) + 1);
 #endif
-		if (!strcmp(src_file->name + strlen(src_path) - strlen(get_file_name(src_path)), now->name + strlen(dst_path) + 1)) { // 파일 이름이 같은 경우
+		if ((src_is_dir && !strcmp(src_file->name + strlen(src_path) + 1, now->name + strlen(dst_path) + 1))
+				|| (!src_is_dir && !strcmp(get_file_name(src_file->name), now->name + strlen(dst_path) + 1))) { // 파일 이름이 같은 경우
 
 #ifdef DEBUG
 			printf("compare_file(): file found\n");
@@ -421,7 +425,7 @@ bool compare_file(file_node *src_file, file_node *dst_file) // 파일 정보 비
  * @param status 변경 사항 타입 번호
  * @param is_first 첫번째 레벨 확인 변수
  */
-int write_change_list(file_node *head, int idx, int status, bool is_first) // 변경사항 목록 작성
+int write_change_list(file_node *head, int idx, int status) // 변경사항 목록 작성
 {
 	file_node *now;
 
@@ -430,17 +434,21 @@ int write_change_list(file_node *head, int idx, int status, bool is_first) // �
 	while (now != NULL) {
 
 		switch (now->status) {
+
 			case UNCHCK: 
-				if (status == CREATE) { // 생성됨
-					strcpy(change_list[idx].name, now->name);
-					change_list[idx].status = CREATE;
-				} else if (status == DELETE) { // 삭제됨
-					char tmp[MAX_BUFFER_SIZE];
-					sprintf(tmp, "%.*s/%s", (int)strlen(dst_path), dst_path, get_file_name(src_path));
-					if(strstr(now->name, tmp) == NULL || !strcmp(now->name, tmp))
+
+				switch (status) {
+
+					case CREATE:
+						strcpy(change_list[idx].name, now->name);
+						change_list[idx].status = CREATE;
 						break;
-					strcpy(change_list[idx].name, now->name);
-					change_list[idx].status = DELETE;
+
+					case DELETE:
+						strcpy(change_list[idx].name, now->name);
+						change_list[idx].status = DELETE;
+						break;
+
 				}
 				change_list[idx++].size = now->size;
 #ifdef DEBUG
@@ -458,9 +466,8 @@ int write_change_list(file_node *head, int idx, int status, bool is_first) // �
 				break;
 		}
 
-		if(option_r || is_first) // R옵션이 존재하거나 첫번째 레벨일 경우
-			if (now->child != NULL)
-				idx = write_change_list(now->child, idx, status, false);
+			if (option_r && now->child != NULL) // R옵션이 주어진 경우
+				idx = write_change_list(now->child, idx, status);
 
 		now = now->next;
 	}
@@ -481,13 +488,6 @@ void renewal(int count) // 파일 동기화
 	struct utimbuf attr;
 	size_t length;
 
-	// 타겟 디렉토리가 존재하지 않을경우 동기화 디렉토리에 생성
-	sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, get_file_name(src_path)); 
-	if (src_is_dir && access(path, F_OK) < 0) {
-		lstat(src_path, &statbuf);
-		mkdir(path, statbuf.st_mode);
-	}
-
 	for (int i = 0; i < count; i++) {
 
 		switch (change_list[i].status) {
@@ -506,7 +506,7 @@ void renewal(int count) // 파일 동기화
 				memset(path, 0, MAX_BUFFER_SIZE);
 
 				lstat(change_list[i].name, &statbuf);
-				sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path))); // 동기화 파일 경로 생성
+				sprintf(path, "%.*s/%s", (int)strlen(dst_path), dst_path, change_list[i].name + strlen(src_path) + 1); // 동기화 파일 경로 생성
 #ifdef DEBUG
 				printf("renewal: path = %s\n", path);
 #endif
@@ -560,12 +560,16 @@ void renewal_tar(int count)
 	}
 
 	// 1. 타겟 디렉토리 tar 생성
-	strncpy(path, src_path, get_file_name(src_path) - src_path - 1); 
-	sprintf(file_name, "%s.tar", get_file_name(src_path));
+	sprintf(file_name, "%s.tar", get_file_name(dst_path)); // tar 파일 이름 생성
 #ifdef DEBUG
 	printf("renewal_tar(): cd %s\n", path);
 #endif
-	chdir(path);
+	if (src_is_dir) // SRC가 디렉토리일 경우 SRC디렉토리 내부로 이동
+		chdir(src_path);
+	else { // SRC가 파일일 경우 SRC가 존재하는 경로로 이동
+		strncpy(path, src_path, get_file_name(src_path) - src_path - 1); 
+		chdir(path); 
+	}
 
 	// 2. 압축 실행
 	for(int i = 0; i < count; i++) {
@@ -585,9 +589,9 @@ void renewal_tar(int count)
 				// 압축 파일에 파일 추가
 				if (src_is_dir)
 #ifdef DEBUG
-					sprintf(command, "tar -rvf %s %s", file_name, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path))); 
+					sprintf(command, "tar -rvf %s %s", file_name, change_list[i].name + strlen(src_path) + 1); 
 #else
-					sprintf(command, "tar -rf %s %s", file_name, change_list[i].name + strlen(src_path) - strlen(get_file_name(src_path)));
+					sprintf(command, "tar -rf %s %s", file_name, change_list[i].name + strlen(src_path) + 1);
 #endif				
 				else 
 #ifdef DEBUG
@@ -603,15 +607,22 @@ void renewal_tar(int count)
 		}
 	}
 
-	chdir(path);
 	lstat(file_name, &statbuf); // 상태 정보 획득
 	size = statbuf.st_size; // 압축 파일 크기 획득
-	sprintf(path, "%.*s/%.*s", (int)strlen(dst_path), dst_path, (int)strlen(file_name), file_name); // 압축 풀 경로 생성
+
+	// DST 내부로 tar 파일 이동
+	sprintf(path, "%s/%.*s", dst_path, (int)strlen(file_name), file_name); // 이동 시킬 경로 생성
+#ifdef DEBUG
+	printf("renewal_tar(): mv %s %s\n", file_name, path);
+#endif
 	rename(file_name, path); // 압축 파일 이동
+
+	// DST 내부로 이동
 #ifdef DEBUG
 	printf("renewal_tar(): cd %s\n", dst_path);
 #endif
 	chdir(dst_path);
+
 #ifdef DEBUG
 	sprintf(command, "tar -xvf %s", file_name);
 	printf("renewal_tar(): command = %s\n", command);
