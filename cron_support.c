@@ -58,7 +58,7 @@ void free_command_token(CommandToken *command) // 명령행 구조체 초기화
 /**
  * @brief 예약 명령 목록 가져오기
  */
-int get_reservation_command(void) // 예약 명령 목록 가져오
+int get_reservation_command(void) // 예약 명령 목록 가져오기
 {
 	FILE *fp;
 
@@ -89,10 +89,10 @@ void write_log(int command_type, char *command) // 로그 파일에 이력 기�
 	time_t now_t;
 	struct tm *now_tm;
 
-	pthread_mutex_lock(&mutex);
+	pthread_mutex_lock(&mutex); // Mutex lock을 통해 Thread-safe 하게 로그 저장
 
-	if ((fp = fopen(CRONTAB_LOG, "r+")) == NULL)
-		fp = fopen(CRONTAB_LOG, "w");
+	if ((fp = fopen(CRONTAB_LOG, "r+")) == NULL) // 로그 파일이 존재하지 않을 경우
+		fp = fopen(CRONTAB_LOG, "w"); // 로그 파일 생성
 
 	fseek(fp, 0, SEEK_END);
 
@@ -101,15 +101,12 @@ void write_log(int command_type, char *command) // 로그 파일에 이력 기�
 
 	switch (command_type) {
 		case ADD:
-			//sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "add", command, CRONTAB_LOG);
 			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "add", command);
 			break;
 		case REMOVE:
-			//sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "remove", command, CRONTAB_LOG);
 			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "remove", command);
 			break;
 		case RUN:
-			//sprintf(temp, "echo \"[%.24s] %s %s\" >> %s", asctime(now_tm), "run", command, CRONTAB_LOG);
 			fprintf(fp, "[%.24s] %s %s\n", asctime(now_tm), "run", command);
 			break;
 	}
