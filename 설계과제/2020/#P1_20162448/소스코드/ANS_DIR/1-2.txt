@@ -1,0 +1,2 @@
+lseek(fd, 15000, SEEK_SET):lseek(fd, 15000, 0)
+

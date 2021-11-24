@@ -1,0 +1,1 @@
+sigaddset(sig_set, SIGOUT)

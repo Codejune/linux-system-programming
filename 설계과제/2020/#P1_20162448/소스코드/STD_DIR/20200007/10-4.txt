@@ -1,0 +1,1 @@
+open(argv[2], O_RDONLY)
