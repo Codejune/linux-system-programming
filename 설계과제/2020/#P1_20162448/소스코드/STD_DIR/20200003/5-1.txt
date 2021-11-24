@@ -1,1 +1,0 @@
-getcwdd(pathname, PATH_MAX)

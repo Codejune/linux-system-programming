@@ -1,1 +1,0 @@
-setvbuf(&fp, &buf, mode, size)

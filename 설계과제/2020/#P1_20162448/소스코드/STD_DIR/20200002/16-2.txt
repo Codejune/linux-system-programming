@@ -1,1 +1,0 @@
-glo_val < 3 || glo_val > 6

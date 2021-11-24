@@ -1,2 +1,0 @@
-read(fd, buf, BUFFER_SIZE):read(fd, buf, 1024)
-

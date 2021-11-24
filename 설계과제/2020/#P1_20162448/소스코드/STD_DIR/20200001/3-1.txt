@@ -1,1 +1,0 @@
-stat(argv[i], statbuf)

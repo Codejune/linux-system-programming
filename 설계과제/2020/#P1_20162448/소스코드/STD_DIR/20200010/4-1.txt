@@ -1,1 +1,0 @@
-symlink(argv[2], argv[1])

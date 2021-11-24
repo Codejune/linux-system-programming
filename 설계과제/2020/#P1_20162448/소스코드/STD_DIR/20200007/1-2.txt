@@ -1,2 +1,0 @@
-lseek(fd, 15000, SEEK_END)
-

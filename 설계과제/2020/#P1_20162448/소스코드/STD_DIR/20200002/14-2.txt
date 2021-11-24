@@ -1,1 +1,0 @@
-tid = pthred_self()

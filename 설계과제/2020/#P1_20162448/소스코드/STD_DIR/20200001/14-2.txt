@@ -1,1 +1,0 @@
-tid = pthread_self()

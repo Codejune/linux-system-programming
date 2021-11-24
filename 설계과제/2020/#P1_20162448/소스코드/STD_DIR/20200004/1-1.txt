@@ -1,1 +1,0 @@
-creat(fname, S_IRUSR & S_IWUSR)
